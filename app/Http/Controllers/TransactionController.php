@@ -3,12 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
+use App\Services\BudgetService;
+use App\Notifications\TransactionCategoryChangeNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 
 class TransactionController extends Controller
 {
+    protected $budgetService;
+
+    public function __construct(BudgetService $budgetService)
+    {
+        $this->budgetService = $budgetService;
+    }
     public function index(Request $request)
     {
         $query = Auth::user()->transactions()->orderBy('date', 'desc');
@@ -97,7 +106,12 @@ class TransactionController extends Controller
             'note' => 'nullable|string|max:1000',
         ]);
 
-        $request->user()->transactions()->create($data);
+        $transaction = $request->user()->transactions()->create($data);
+
+        // Check budget limit for expense transactions
+        if ($transaction->type === 'expense') {
+            $this->budgetService->checkBudgetLimit($request->user(), $transaction->category, $transaction->amount);
+        }
 
         return redirect()->route('transactions.index')
             ->with('success', 'Transacción creada exitosamente');
@@ -137,7 +151,18 @@ class TransactionController extends Controller
             'note' => 'nullable|string|max:1000',
         ]);
 
+        $previousCategory = $transaction->category;
         $transaction->update($data);
+
+        // Notify if category changed
+        if ($previousCategory !== $data['category']) {
+            Notification::send($request->user(), new TransactionCategoryChangeNotification($transaction, $previousCategory));
+        }
+
+        // Check budget limit for expense transactions
+        if ($transaction->type === 'expense') {
+            $this->budgetService->checkBudgetLimit($request->user(), $transaction->category, $transaction->amount);
+        }
 
         return redirect()->route('transactions.index')
             ->with('success', 'Transacción actualizada exitosamente');

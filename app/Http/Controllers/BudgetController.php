@@ -16,8 +16,8 @@ class BudgetController extends Controller
         $currentMonth = $request->get('month', now()->format('Y-m'));
         
         $budgets = Auth::user()->budgets()
-            ->whereMonth('month', Carbon::parse($currentMonth)->month)
-            ->whereYear('month', Carbon::parse($currentMonth)->year)
+            ->whereMonth('month', Carbon::parse($currentMonth . '-01')->month)
+            ->whereYear('month', Carbon::parse($currentMonth . '-01')->year)
             ->get();
 
         // Calculate actual spending for each budget
