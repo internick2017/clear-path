@@ -12,29 +12,25 @@
           <table class="min-w-full bg-white border mb-10">
             <thead>
               <tr>
-                <th class="px-4 py-2 border">Name</th>
-                <th class="px-4 py-2 border">Amount</th>
-                <th class="px-4 py-2 border">Interest Rate (%)</th>
-                <th class="px-4 py-2 border">Minimum Payment</th>
-                <th class="px-4 py-2 border">Due Date</th>
-                <th class="px-4 py-2 border">Estimated Months</th>
-                <th class="px-4 py-2 border">With Extra Payment</th>
-                <th class="px-4 py-2 border">Strategy</th>
+                <th class="px-4 py-2 border">Nombre</th>
+                <th class="px-4 py-2 border">Monto</th>
+                <th class="px-4 py-2 border">Interés (%)</th>
+                <th class="px-4 py-2 border">Pago mínimo</th>
+                <th class="px-4 py-2 border">Meses estimados</th>
+                <th class="px-4 py-2 border">Meses con extra</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="debt in plan" :key="debt.name">
                 <td class="px-4 py-2 border">{{ debt.name }}</td>
-                <td class="px-4 py-2 border">${{ typeof debt.amount === 'number' ? debt.amount.toFixed(2) : debt.amount }}</td>
+                <td class="px-4 py-2 border">${{ Number(debt.amount).toFixed(2) }}</td>
                 <td class="px-4 py-2 border">{{ debt.interest_rate }}</td>
-                <td class="px-4 py-2 border">${{ typeof debt.minimum_payment === 'number' ? debt.minimum_payment.toFixed(2) : debt.minimum_payment }}</td>
-                <td class="px-4 py-2 border">{{ debt.due_date }}</td>
-                <td class="px-4 py-2 border">{{ debt.estimated_months === -1 ? 'Never' : debt.estimated_months }}</td>
-                <td class="px-4 py-2 border">{{ debt.with_extra_payment === -1 ? 'Never' : debt.with_extra_payment }}</td>
-                <td class="px-4 py-2 border">{{ debt.strategy }}</td>
+                <td class="px-4 py-2 border">${{ Number(debt.minimum_payment).toFixed(2) }}</td>
+                <td class="px-4 py-2 border">{{ debt.estimated_months === -1 ? 'Nunca' : debt.estimated_months }}</td>
+                <td class="px-4 py-2 border">{{ debt.with_extra_payment === -1 ? 'Nunca' : debt.with_extra_payment }}</td>
               </tr>
               <tr v-if="plan.length === 0">
-                <td colspan="8" class="px-4 py-2 border text-center">No debts found.</td>
+                <td colspan="6" class="px-4 py-2 border text-center">No se encontraron deudas.</td>
               </tr>
             </tbody>
           </table>
@@ -50,13 +46,10 @@
 
 <script setup>
 import AppLayout from '../Layouts/AppLayout.vue';
-// Asignar el layout para Inertia
 defineOptions({ layout: AppLayout });
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import Chart from 'chart.js/auto';
-
-console.log('DebtPlan component loaded');
 
 const props = defineProps({
   plan: Array,

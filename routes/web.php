@@ -1,3 +1,7 @@
+use App\Http\Controllers\GoalController;
+Route::middleware('auth')->group(function () {
+    Route::get('/goals', [GoalController::class, 'index'])->name('goals.index');
+    Route::post('/goals/{id}/deposit', [GoalController::class, 'deposit'])->name('goals.addAmount');
 <?php
 
 use App\Http\Controllers\ProfileController;
