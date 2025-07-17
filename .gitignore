@@ -44,3 +44,9 @@ coverage/
 *.swp
 *.swo
 /database/*.sqlite
+
+# Cursor AI rules file
+.cursorrules
+
+# Development tracking file
+development-progress.md

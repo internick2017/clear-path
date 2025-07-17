@@ -1,6 +1,8 @@
 <?php
 use App\Http\Controllers\GoalController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\BudgetController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -10,7 +12,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/goals/create', [GoalController::class, 'create'])->name('goals.create');
     Route::post('/goals', [GoalController::class, 'store'])->name('goals.store');
     Route::post('/goals/{id}/deposit', [GoalController::class, 'deposit'])->name('goals.addAmount');
-    // Goals page route (already present as /goals, index)
+    
+    // Transaction routes
+    Route::resource('transactions', TransactionController::class);
+    
+    // Budget routes
+    Route::resource('budgets', BudgetController::class);
+    
+    // Debt routes
+    Route::get('/debts', [DebtController::class, 'index'])->name('debts.index');
+    Route::post('/debts/{debt}/mark-paid', [DebtController::class, 'markAsPaid'])->name('debts.markAsPaid');
+    Route::post('/debts/{debt}/mark-active', [DebtController::class, 'markAsActive'])->name('debts.markAsActive');
 });
 
 Route::get('/', function () {
