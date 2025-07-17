@@ -1,13 +1,17 @@
-use App\Http\Controllers\GoalController;
-Route::middleware('auth')->group(function () {
-    Route::get('/goals', [GoalController::class, 'index'])->name('goals.index');
-    Route::post('/goals/{id}/deposit', [GoalController::class, 'deposit'])->name('goals.addAmount');
 <?php
-
+use App\Http\Controllers\GoalController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/goals', [GoalController::class, 'index'])->name('goals.index');
+    Route::get('/goals/create', [GoalController::class, 'create'])->name('goals.create');
+    Route::post('/goals', [GoalController::class, 'store'])->name('goals.store');
+    Route::post('/goals/{id}/deposit', [GoalController::class, 'deposit'])->name('goals.addAmount');
+    // Goals page route (already present as /goals, index)
+});
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [

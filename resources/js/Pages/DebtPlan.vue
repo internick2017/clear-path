@@ -45,7 +45,7 @@
 </template>
 
 <script setup>
-import AppLayout from '../Layouts/AppLayout.vue';
+import AppLayout from '@/Layouts/AppLayout.vue';
 defineOptions({ layout: AppLayout });
 import { ref, onMounted, watch } from 'vue';
 import { router } from '@inertiajs/vue3';

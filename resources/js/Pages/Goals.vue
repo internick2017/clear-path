@@ -35,8 +35,11 @@
 </template>
 
 <script setup>
+import AppLayout from '@/Layouts/AppLayout.vue';
 import { ref } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
+
+defineOptions({ layout: AppLayout })
 
 const page = usePage();
 const goals = page.props.goals ?? [];

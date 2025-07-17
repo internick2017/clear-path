@@ -9,12 +9,37 @@ use Inertia\Inertia;
 
 class GoalController extends Controller
 {
+
     public function index()
     {
         $goals = Auth::user()->goals()->get();
         return Inertia::render('Goals', [
             'goals' => $goals,
+            'success' => session('success'),
         ]);
+    }
+
+    public function create()
+    {
+        return Inertia::render('GoalCreate');
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'title' => 'required|string|max:100',
+            'target_amount' => 'required|numeric|min:1',
+            'deadline' => 'required|date|after:today',
+        ]);
+
+        $request->user()->goals()->create([
+            'title' => $data['title'],
+            'target_amount' => $data['target_amount'],
+            'current_amount' => 0,
+            'deadline' => $data['deadline'],
+        ]);
+
+        return redirect()->route('goals.index')->with('success', 'Meta creada con éxito');
     }
 
     public function deposit(Request $request, $id)
