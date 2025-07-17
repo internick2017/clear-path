@@ -41,5 +41,38 @@ class TestDataSeeder extends Seeder
             }
             $budget->save();
         }
+
+        // Add test debts for payoff simulation
+        $debts = [
+            [
+                'name' => 'Visa',
+                'amount' => 1200,
+                'interest_rate' => 17.9,
+                'minimum_payment' => 100,
+                'due_date' => now()->addMonths(12),
+                'strategy' => 'snowball',
+            ],
+            [
+                'name' => 'Mastercard',
+                'amount' => 800,
+                'interest_rate' => 22.5,
+                'minimum_payment' => 50,
+                'due_date' => now()->addMonths(10),
+                'strategy' => 'avalanche',
+            ],
+            [
+                'name' => 'Car Loan',
+                'amount' => 5000,
+                'interest_rate' => 6.5,
+                'minimum_payment' => 200,
+                'due_date' => now()->addMonths(36),
+                'strategy' => 'snowball',
+            ],
+        ];
+        foreach ($debts as $debt) {
+            \App\Models\Debt::create(array_merge($debt, [
+                'user_id' => $user->id,
+            ]));
+        }
     }
 }
