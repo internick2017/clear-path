@@ -95,7 +95,7 @@ class BudgetServiceTest extends TestCase
 
         // Old budget should be reset and updated to current month
         $this->assertEquals(0, $oldBudget->spent);
-        $this->assertEquals(now()->format('Y-m'), $oldBudget->month);
+        $this->assertEquals(now()->format('Y-m-d'), $oldBudget->month);
         
         // Current budget should remain unchanged
         $this->assertEquals(100.00, $currentBudget->spent);

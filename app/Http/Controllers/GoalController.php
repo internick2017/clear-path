@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Goal;
+use App\Http\Requests\GoalRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Inertia\Inertia;
 
 class GoalController extends Controller
 {
+    use AuthorizesRequests;
 
     public function index()
     {
@@ -24,14 +27,10 @@ class GoalController extends Controller
         return Inertia::render('GoalCreate');
     }
 
-    public function store(Request $request)
+    public function store(GoalRequest $request)
     {
-        $data = $request->validate([
-            'title' => 'required|string|max:100',
-            'target_amount' => 'required|numeric|min:1',
-            'deadline' => 'required|date|after:today',
-        ]);
-
+        $data = $request->validated();
+        
         $request->user()->goals()->create([
             'title' => $data['title'],
             'target_amount' => $data['target_amount'],
@@ -39,12 +38,41 @@ class GoalController extends Controller
             'deadline' => $data['deadline'],
         ]);
 
-        return redirect()->route('goals.index')->with('success', 'Meta creada con éxito');
+        return redirect()->route('goals.index')->with('success', 'Goal created successfully');
     }
 
-    public function deposit(Request $request, $id)
+    public function edit(Goal $goal)
     {
-        $goal = Goal::where('user_id', Auth::id())->findOrFail($id);
+        $this->authorize('update', $goal);
+
+        return Inertia::render('GoalEdit', [
+            'goal' => $goal
+        ]);
+    }
+
+    public function update(GoalRequest $request, Goal $goal)
+    {
+        $this->authorize('update', $goal);
+
+        $goal->update($request->validated());
+
+        return redirect()->route('goals.index')
+            ->with('success', 'Goal updated successfully');
+    }
+
+    public function destroy(Goal $goal)
+    {
+        $this->authorize('delete', $goal);
+
+        $goal->delete();
+
+        return redirect()->route('goals.index')
+            ->with('success', 'Meta eliminada exitosamente');
+    }
+
+    public function deposit(Request $request, Goal $goal)
+    {
+        $this->authorize('deposit', $goal);
         $amount = (float) $request->input('amount', 0);
         if ($amount <= 0) {
             return back()->withErrors(['amount' => 'La cantidad debe ser mayor a cero.']);
@@ -58,7 +86,7 @@ class GoalController extends Controller
         $goal->save();
         $message = null;
         if ($goal->current_amount >= $goal->target_amount) {
-            $message = '🎉 ¡Meta alcanzada!';
+            $message = '🎉 Goal reached!';
         }
         return redirect()->route('goals.index')->with('success', $message);
     }

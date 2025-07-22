@@ -11,14 +11,16 @@ class BudgetExceededNotification extends Notification
 {
     use Queueable;
 
+    protected $budget;
+    protected $spentAmount;
+
     /**
      * Create a new notification instance.
      */
-    protected $budget;
-
-    public function __construct($budget)
+    public function __construct($budget, $spentAmount = null)
     {
         $this->budget = $budget;
+        $this->spentAmount = $spentAmount ?? $budget->spent;
     }
 
     /**
@@ -28,27 +30,22 @@ class BudgetExceededNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['database'];
     }
 
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail(object $notifiable): MailMessage
+    public function toMail($notifiable)
     {
         return (new MailMessage)
-            ->subject('¡Presupuesto excedido!')
-            ->line("Has excedido el límite de la categoría: {$this->budget->category}")
-            ->action('Ver presupuesto', url('/dashboard'));
-    }
-
-    public function toArray(object $notifiable): array
-    {
-        return [
-            'title' => '¡Presupuesto excedido!',
-            'summary' => "Has excedido el límite de la categoría: {$this->budget->category}",
-            'url' => url('/dashboard'),
-        ];
+            ->subject('Budget Exceeded!')
+            ->line("You have exceeded the limit for category: {$this->budget->category}")
+            ->line("Limit: $" . number_format($this->budget->limit, 2))
+            ->line("Spent: $" . number_format($this->budget->spent, 2))
+            ->line("Over by: $" . number_format($this->budget->spent - $this->budget->limit, 2))
+            ->action('View Budgets', route('budgets.index'))
+            ->line('Consider reviewing your spending in this category.');
     }
 
     /**
@@ -56,10 +53,16 @@ class BudgetExceededNotification extends Notification
      *
      * @return array<string, mixed>
      */
-    public function toArray(object $notifiable): array
+    public function toArray($notifiable)
     {
         return [
-            //
+            'type' => 'budget_exceeded',
+            'budget_id' => $this->budget->id,
+            'title' => 'Budget Exceeded!',
+            'message' => "You have exceeded the limit for category '{$this->budget->category}' by $" . number_format($this->budget->spent - $this->budget->limit, 2),
+            'data' => [
+                'budget' => $this->budget->toArray()
+            ]
         ];
     }
 }

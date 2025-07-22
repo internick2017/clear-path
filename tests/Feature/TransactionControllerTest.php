@@ -66,17 +66,26 @@ class TransactionControllerTest extends TestCase
         $this->actingAs($this->user);
         
         // Create a budget that will be exceeded
-        Budget::factory()->for($this->user)->create([
+        $budget = Budget::create([
+            'user_id' => $this->user->id,
             'category' => 'Groceries',
             'limit' => 100.00,
-            'spent' => 80.00,
-            'month' => now()->format('Y-m-d')
+            'spent' => 0.00, // Start with 0 spent
+            'month' => now()->format('Y-m-01') // First day of current month
+        ]);
+        
+        // Debug: Check if budget was created correctly
+        $this->assertDatabaseHas('budgets', [
+            'user_id' => $this->user->id,
+            'category' => 'Groceries',
+            'limit' => 100.00,
+            'spent' => 0.00,
         ]);
         
         $transactionData = [
             'type' => 'expense',
             'category' => 'Groceries',
-            'amount' => 50.00,
+            'amount' => 150.00, // This will exceed the 100.00 limit
             'date' => now()->format('Y-m-d'),
             'note' => 'This will exceed budget'
         ];
@@ -84,6 +93,19 @@ class TransactionControllerTest extends TestCase
         $response = $this->post(route('transactions.store'), $transactionData);
         
         $response->assertRedirect(route('transactions.index'));
+        
+        // Debug: Check if transaction was created
+        $this->assertDatabaseHas('transactions', [
+            'user_id' => $this->user->id,
+            'type' => 'expense',
+            'category' => 'Groceries',
+            'amount' => 150.00,
+        ]);
+        
+        // Debug: Check if budget was updated by BudgetService
+        $updatedBudget = Budget::find($budget->id);
+        $this->assertEquals(150.00, $updatedBudget->spent); // Should be updated to actual transaction amount
+        
         Notification::assertSentTo($this->user, BudgetExceededNotification::class);
     }
 

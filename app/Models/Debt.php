@@ -35,6 +35,55 @@ class Debt extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function payments()
+    {
+        return $this->hasMany(DebtPayment::class);
+    }
+
+    public function addPayment(float $amount, string $paymentDate, string $paymentMethod = null, string $note = null)
+    {
+        // Calculate interest and principal portions
+        $interestAmount = $this->getRemainingBalance() * ($this->interest_rate / 100 / 12);
+        $principalAmount = max(0, $amount - $interestAmount);
+
+        $payment = $this->payments()->create([
+            'user_id' => $this->user_id,
+            'amount' => $amount,
+            'principal_amount' => $principalAmount,
+            'interest_amount' => min($amount, $interestAmount),
+            'payment_date' => $paymentDate,
+            'payment_method' => $paymentMethod,
+            'note' => $note,
+        ]);
+
+        // Check if debt is fully paid
+        if ($this->getRemainingBalance() <= 0) {
+            $this->markAsPaid();
+        }
+
+        return $payment;
+    }
+
+    public function getRemainingBalance(): float
+    {
+        return $this->amount - $this->getTotalPaidAmount();
+    }
+
+    public function getTotalPaidAmount(): float
+    {
+        return $this->payments()->sum('amount');
+    }
+
+    public function getTotalPrincipalPaid(): float
+    {
+        return $this->payments()->sum('principal_amount');
+    }
+
+    public function getTotalInterestPaid(): float
+    {
+        return $this->payments()->sum('interest_amount');
+    }
+
     public function markAsPaid()
     {
         $this->update([
@@ -69,5 +118,14 @@ class Debt extends Model
     public function getIsActiveAttribute()
     {
         return $this->status === 'active';
+    }
+
+    public function getPaymentProgressAttribute()
+    {
+        if ($this->amount <= 0) {
+            return 100;
+        }
+        
+        return min(100, ($this->getTotalPaidAmount() / $this->amount) * 100);
     }
 }

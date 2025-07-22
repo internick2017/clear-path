@@ -7,7 +7,7 @@
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-gray-900">Gestión de Deudas</h2>
+        <h2 class="text-2xl font-bold text-gray-900">Debt Management</h2>
         <Link :href="route('debts.plan')" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
           Ver Plan de Pago
         </Link>
@@ -70,7 +70,7 @@
           <h3 class="text-lg font-semibold mb-4">Deudas Activas</h3>
           
           <div v-if="activeDebts.length === 0" class="text-gray-500 text-center py-8">
-            No tienes deudas activas. ¡Felicitaciones! 🎉
+            You have no active debts. Congratulations! 🎉
           </div>
           
           <div v-else class="overflow-x-auto">
@@ -84,10 +84,10 @@
                     Monto
                   </th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tasa de Interés
+                    Interest Rate
                   </th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Pago Mínimo
+                    Minimum Payment
                   </th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Fecha Vencimiento
@@ -206,7 +206,7 @@ function formatDate(date) {
 }
 
 function markAsPaid(debt) {
-  if (confirm(`¿Estás seguro de que quieres marcar "${debt.name}" como pagada?`)) {
+        if (confirm(`Are you sure you want to mark "${debt.name}" as paid?`)) {
     router.post(route('debts.markAsPaid', debt.id), {}, {
       preserveState: true,
       preserveScroll: true
@@ -215,7 +215,7 @@ function markAsPaid(debt) {
 }
 
 function markAsActive(debt) {
-  if (confirm(`¿Estás seguro de que quieres marcar "${debt.name}" como activa nuevamente?`)) {
+        if (confirm(`Are you sure you want to mark "${debt.name}" as active again?`)) {
     router.post(route('debts.markAsActive', debt.id), {}, {
       preserveState: true,
       preserveScroll: true

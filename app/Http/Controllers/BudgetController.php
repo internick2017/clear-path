@@ -4,29 +4,39 @@ namespace App\Http\Controllers;
 
 use App\Models\Budget;
 use App\Models\Transaction;
+use App\Http\Requests\BudgetRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
 class BudgetController extends Controller
 {
+    use AuthorizesRequests;
+
     public function index(Request $request)
     {
         $currentMonth = $request->get('month', now()->format('Y-m'));
+        $currentMonthDate = Carbon::parse($currentMonth . '-01');
         
+        // Get all budgets for the current month
         $budgets = Auth::user()->budgets()
-            ->whereMonth('month', Carbon::parse($currentMonth . '-01')->month)
-            ->whereYear('month', Carbon::parse($currentMonth . '-01')->year)
+            ->whereMonth('month', $currentMonthDate->month)
+            ->whereYear('month', $currentMonthDate->year)
             ->get();
 
-        // Calculate actual spending for each budget
-        $budgets = $budgets->map(function($budget) use ($currentMonth) {
-            $actualSpent = Auth::user()->transactions()
-                ->where('type', 'expense')
+        // Get all transactions for the current month in one query
+        $currentMonthTransactions = Auth::user()->transactions()
+            ->where('type', 'expense')
+            ->whereMonth('date', $currentMonthDate->month)
+            ->whereYear('date', $currentMonthDate->year)
+            ->get();
+
+        // Calculate actual spending for each budget using the loaded transactions
+        $budgets = $budgets->map(function($budget) use ($currentMonthTransactions) {
+            $actualSpent = (float) $currentMonthTransactions
                 ->where('category', $budget->category)
-                ->whereMonth('date', Carbon::parse($currentMonth)->month)
-                ->whereYear('date', Carbon::parse($currentMonth)->year)
                 ->sum('amount');
             
             $budget->actual_spent = $actualSpent;
@@ -37,7 +47,7 @@ class BudgetController extends Controller
             return $budget;
         });
 
-        // Get available categories from transactions
+        // Get available categories from transactions (cache this if possible)
         $categories = Auth::user()->transactions()
             ->where('type', 'expense')
             ->distinct()
@@ -68,40 +78,22 @@ class BudgetController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(BudgetRequest $request)
     {
-        $data = $request->validate([
-            'category' => 'required|string|max:255',
-            'limit' => 'required|numeric|min:0.01',
-            'month' => 'required|date_format:Y-m',
-        ]);
-
+        $data = $request->validated();
+        
         // Convert month to first day of the month
         $data['month'] = Carbon::parse($data['month'] . '-01')->format('Y-m-d');
-
-        // Check if budget already exists for this category and month
-        $existingBudget = Auth::user()->budgets()
-            ->where('category', $data['category'])
-            ->whereMonth('month', Carbon::parse($data['month'])->month)
-            ->whereYear('month', Carbon::parse($data['month'])->year)
-            ->first();
-
-        if ($existingBudget) {
-            return back()->withErrors(['category' => 'Ya existe un presupuesto para esta categoría en el mes seleccionado.']);
-        }
 
         $request->user()->budgets()->create($data);
 
         return redirect()->route('budgets.index')
-            ->with('success', 'Presupuesto creado exitosamente');
+            ->with('success', 'Budget created successfully');
     }
 
     public function edit(Budget $budget)
     {
-        // Ensure the budget belongs to the authenticated user
-        if ($budget->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('update', $budget);
 
         $categories = Auth::user()->transactions()
             ->where('type', 'expense')
@@ -116,46 +108,24 @@ class BudgetController extends Controller
         ]);
     }
 
-    public function update(Request $request, Budget $budget)
+    public function update(BudgetRequest $request, Budget $budget)
     {
-        // Ensure the budget belongs to the authenticated user
-        if ($budget->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('update', $budget);
 
-        $data = $request->validate([
-            'category' => 'required|string|max:255',
-            'limit' => 'required|numeric|min:0.01',
-            'month' => 'required|date_format:Y-m',
-        ]);
-
+        $data = $request->validated();
+        
         // Convert month to first day of the month
         $data['month'] = Carbon::parse($data['month'] . '-01')->format('Y-m-d');
-
-        // Check if budget already exists for this category and month (excluding current budget)
-        $existingBudget = Auth::user()->budgets()
-            ->where('category', $data['category'])
-            ->whereMonth('month', Carbon::parse($data['month'])->month)
-            ->whereYear('month', Carbon::parse($data['month'])->year)
-            ->where('id', '!=', $budget->id)
-            ->first();
-
-        if ($existingBudget) {
-            return back()->withErrors(['category' => 'Ya existe un presupuesto para esta categoría en el mes seleccionado.']);
-        }
 
         $budget->update($data);
 
         return redirect()->route('budgets.index')
-            ->with('success', 'Presupuesto actualizado exitosamente');
+            ->with('success', 'Budget updated successfully');
     }
 
     public function destroy(Budget $budget)
     {
-        // Ensure the budget belongs to the authenticated user
-        if ($budget->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('delete', $budget);
 
         $budget->delete();
 

@@ -3,21 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
-use App\Services\BudgetService;
+use App\Models\Budget;
 use App\Notifications\TransactionCategoryChangeNotification;
+use App\Notifications\BudgetExceededNotification;
+use App\Http\Requests\TransactionRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Inertia\Inertia;
 
 class TransactionController extends Controller
 {
-    protected $budgetService;
+    use AuthorizesRequests;
 
-    public function __construct(BudgetService $budgetService)
-    {
-        $this->budgetService = $budgetService;
-    }
     public function index(Request $request)
     {
         $query = Auth::user()->transactions()->orderBy('date', 'desc');
@@ -96,33 +95,20 @@ class TransactionController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(TransactionRequest $request)
     {
-        $data = $request->validate([
-            'type' => 'required|in:income,expense',
-            'category' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0.01',
-            'date' => 'required|date',
-            'note' => 'nullable|string|max:1000',
-        ]);
+        $transaction = $request->user()->transactions()->create($request->validated());
 
-        $transaction = $request->user()->transactions()->create($data);
-
-        // Check budget limit for expense transactions
-        if ($transaction->type === 'expense') {
-            $this->budgetService->checkBudgetLimit($request->user(), $transaction->category, $transaction->amount);
-        }
+        // Note: Budget checking and notification is handled by BudgetService
+        // via the Transaction model's created event
 
         return redirect()->route('transactions.index')
-            ->with('success', 'Transacción creada exitosamente');
+            ->with('success', 'Transaction created successfully');
     }
 
     public function edit(Transaction $transaction)
     {
-        // Ensure the transaction belongs to the authenticated user
-        if ($transaction->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('update', $transaction);
         
         $categories = Auth::user()->transactions()
             ->distinct()
@@ -136,48 +122,29 @@ class TransactionController extends Controller
         ]);
     }
 
-    public function update(Request $request, Transaction $transaction)
+    public function update(TransactionRequest $request, Transaction $transaction)
     {
-        // Ensure the transaction belongs to the authenticated user
-        if ($transaction->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('update', $transaction);
         
-        $data = $request->validate([
-            'type' => 'required|in:income,expense',
-            'category' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0.01',
-            'date' => 'required|date',
-            'note' => 'nullable|string|max:1000',
-        ]);
-
         $previousCategory = $transaction->category;
-        $transaction->update($data);
+        $transaction->update($request->validated());
 
         // Notify if category changed
-        if ($previousCategory !== $data['category']) {
+        if ($previousCategory !== $request->validated()['category']) {
             Notification::send($request->user(), new TransactionCategoryChangeNotification($transaction, $previousCategory));
         }
 
-        // Check budget limit for expense transactions
-        if ($transaction->type === 'expense') {
-            $this->budgetService->checkBudgetLimit($request->user(), $transaction->category, $transaction->amount);
-        }
-
         return redirect()->route('transactions.index')
-            ->with('success', 'Transacción actualizada exitosamente');
+            ->with('success', 'Transaction updated successfully');
     }
 
     public function destroy(Transaction $transaction)
     {
-        // Ensure the transaction belongs to the authenticated user
-        if ($transaction->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('delete', $transaction);
         
         $transaction->delete();
 
         return redirect()->route('transactions.index')
-            ->with('success', 'Transacción eliminada exitosamente');
+            ->with('success', 'Transaction deleted successfully');
     }
 } 

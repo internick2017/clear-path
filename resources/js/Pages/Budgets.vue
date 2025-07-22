@@ -78,7 +78,7 @@
             <!-- Budget Details -->
             <div class="space-y-2 text-sm">
               <div class="flex justify-between">
-                <span class="text-gray-600">Límite:</span>
+                <span class="text-gray-600">Limit:</span>
                 <span class="font-semibold">${{ formatCurrency(budget.limit) }}</span>
               </div>
               <div class="flex justify-between">
@@ -105,7 +105,7 @@
                 </div>
                 <div class="ml-3">
                   <p class="text-sm text-red-800">
-                    ¡Presupuesto excedido por ${{ formatCurrency(budget.actual_spent - budget.limit) }}!
+                    Budget exceeded by ${{ formatCurrency(budget.actual_spent - budget.limit) }}!
                   </p>
                 </div>
               </div>
@@ -121,7 +121,7 @@
                 </div>
                 <div class="ml-3">
                   <p class="text-sm text-yellow-800">
-                    Cerca del límite. Quedan ${{ formatCurrency(budget.remaining) }}.
+                    Near limit. ${{ formatCurrency(budget.remaining) }} remaining.
                   </p>
                 </div>
               </div>
@@ -139,10 +139,10 @@
               <thead class="bg-gray-50">
                 <tr>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Categoría
+                    Category
                   </th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Límite
+                    Limit
                   </th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Gastado
@@ -234,7 +234,7 @@ function changeMonth() {
 }
 
 function deleteBudget(budget) {
-  if (confirm('¿Estás seguro de que quieres eliminar este presupuesto?')) {
+        if (confirm('Are you sure you want to delete this budget?')) {
     router.delete(route('budgets.destroy', budget.id), {
       preserveState: true,
       preserveScroll: true

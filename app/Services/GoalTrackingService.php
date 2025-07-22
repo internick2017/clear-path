@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Goal;
+use App\Models\Transaction;
 use App\Models\User;
 use App\Notifications\GoalReachedNotification;
 use Illuminate\Support\Facades\Notification;
@@ -10,7 +11,131 @@ use Illuminate\Support\Facades\Notification;
 class GoalTrackingService
 {
     /**
-     * Update goal progress
+     * Handle transaction created event for goal tracking
+     * 
+     * @param Transaction $transaction
+     * @return void
+     */
+    public function handleTransactionCreated(Transaction $transaction): void
+    {
+        // Only track income transactions that are categorized as savings
+        if ($transaction->type === 'income' && $this->isSavingsTransaction($transaction)) {
+            $this->updateGoalsFromSavings($transaction->user, $transaction->amount);
+        }
+    }
+
+    /**
+     * Handle transaction updated event for goal tracking
+     * 
+     * @param Transaction $transaction
+     * @param array $oldData
+     * @return void
+     */
+    public function handleTransactionUpdated(Transaction $transaction, array $oldData): void
+    {
+        $oldWasSavings = $oldData['type'] === 'income' && $this->isSavingsTransaction((object)$oldData);
+        $newIsSavings = $transaction->type === 'income' && $this->isSavingsTransaction($transaction);
+
+        if ($oldWasSavings || $newIsSavings) {
+            // Recalculate all goals for this user
+            $this->recalculateAllGoals($transaction->user);
+        }
+    }
+
+    /**
+     * Handle transaction deleted event for goal tracking
+     * 
+     * @param Transaction $transaction
+     * @return void
+     */
+    public function handleTransactionDeleted(Transaction $transaction): void
+    {
+        if ($transaction->type === 'income' && $this->isSavingsTransaction($transaction)) {
+            $this->recalculateAllGoals($transaction->user);
+        }
+    }
+
+    /**
+     * Check if a transaction is a savings transaction
+     * 
+     * @param Transaction|object $transaction
+     * @return bool
+     */
+    private function isSavingsTransaction($transaction): bool
+    {
+        $savingsCategories = ['savings', 'investment', 'goal'];
+        return in_array(strtolower($transaction->category), $savingsCategories);
+    }
+
+    /**
+     * Update goals from savings amount
+     * 
+     * @param User $user
+     * @param float $amount
+     * @return void
+     */
+    private function updateGoalsFromSavings(User $user, float $amount): void
+    {
+        $activeGoals = $user->goals()
+            ->whereRaw('CAST(current_amount AS DECIMAL(10,2)) < CAST(target_amount AS DECIMAL(10,2))')
+            ->where('deadline', '>', now()->format('Y-m-d'))
+            ->orderBy('deadline', 'asc')
+            ->get();
+
+        if ($activeGoals->isEmpty()) {
+            return;
+        }
+
+        $remainingAmount = $amount;
+        
+        foreach ($activeGoals as $goal) {
+            if ($remainingAmount <= 0) {
+                break;
+            }
+
+            $neededAmount = $goal->target_amount - $goal->current_amount;
+            $amountToAdd = min($remainingAmount, $neededAmount);
+            
+            $goal->current_amount += $amountToAdd;
+            $goal->save();
+
+            $remainingAmount -= $amountToAdd;
+
+            // Check if goal is reached
+            if ($goal->current_amount >= $goal->target_amount) {
+                Notification::send($user, new GoalReachedNotification($goal));
+            }
+        }
+    }
+
+    /**
+     * Recalculate all goals for a user based on savings transactions
+     * 
+     * @param User $user
+     * @return void
+     */
+    private function recalculateAllGoals(User $user): void
+    {
+        $goals = $user->goals()->orderBy('created_at', 'asc')->get();
+        
+        // Reset all goals to 0
+        $user->goals()->update(['current_amount' => 0]);
+
+        // Get all savings transactions
+        $savingsTransactions = $user->transactions()
+            ->where('type', 'income')
+            ->whereIn('category', ['savings', 'investment', 'goal'])
+            ->orderBy('date', 'asc')
+            ->get();
+
+        // Redistribute savings across goals
+        foreach ($savingsTransactions as $transaction) {
+            $this->updateGoalsFromSavings($user, $transaction->amount);
+        }
+    }
+
+    /**
+     * Update goal progress manually
      * 
      * @param Goal $goal
      * @param float $amount

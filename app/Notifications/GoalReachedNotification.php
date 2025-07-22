@@ -11,11 +11,11 @@ class GoalReachedNotification extends Notification
 {
     use Queueable;
 
+    protected $goal;
+
     /**
      * Create a new notification instance.
      */
-    protected $goal;
-
     public function __construct($goal)
     {
         $this->goal = $goal;
@@ -28,27 +28,21 @@ class GoalReachedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database']; // Puedes agregar 'database' para notificaciones en la app
+        return ['database'];
     }
 
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail(object $notifiable): MailMessage
+    public function toMail($notifiable)
     {
         return (new MailMessage)
-            ->subject('¡Meta alcanzada!')
-            ->line("Has alcanzado tu meta: {$this->goal->title}")
-            ->action('Ver metas', url('/goals'));
-    }
-
-    public function toArray(object $notifiable): array
-    {
-        return [
-            'title' => '¡Meta alcanzada!',
-            'summary' => "Has alcanzado tu meta: {$this->goal->title}",
-            'url' => url('/goals'),
-        ];
+            ->subject('Goal Reached!')
+            ->line("Congratulations! You have reached your goal: {$this->goal->title}")
+            ->line("Current amount: $" . number_format($this->goal->current_amount, 2))
+            ->line("Target amount: $" . number_format($this->goal->target_amount, 2))
+            ->action('View Goal', route('goals.show', $this->goal))
+            ->line('Keep up the great work!');
     }
 
     /**
@@ -56,10 +50,16 @@ class GoalReachedNotification extends Notification
      *
      * @return array<string, mixed>
      */
-    public function toArray(object $notifiable): array
+    public function toArray($notifiable)
     {
         return [
-            //
+            'type' => 'goal_reached',
+            'goal_id' => $this->goal->id,
+            'title' => 'Goal Reached!',
+            'message' => "Congratulations! You have reached your goal '{$this->goal->title}' with $" . number_format($this->goal->current_amount, 2) . " of $" . number_format($this->goal->target_amount, 2),
+            'data' => [
+                'goal' => $this->goal->toArray()
+            ]
         ];
     }
 }
