@@ -5,17 +5,18 @@
         <!-- Left side navigation -->
         <div class="flex gap-6 items-center">
           <Link href="/dashboard" class="font-semibold text-gray-700 hover:text-blue-600">Dashboard</Link>
-          <Link href="/transactions" class="font-semibold text-gray-700 hover:text-blue-600">Transacciones</Link>
-          <Link href="/budgets" class="font-semibold text-gray-700 hover:text-blue-600">Presupuestos</Link>
-          <Link href="/goals" class="font-semibold text-gray-700 hover:text-blue-600">Metas</Link>
-          <Link href="/debts" class="font-semibold text-gray-700 hover:text-blue-600">Deudas</Link>
+          <Link href="/transactions" class="font-semibold text-gray-700 hover:text-blue-600">Transactions</Link>
+          <Link href="/budgets" class="font-semibold text-gray-700 hover:text-blue-600">Budgets</Link>
+          <Link href="/goals" class="font-semibold text-gray-700 hover:text-blue-600">Goals</Link>
+          <Link href="/debts" class="font-semibold text-gray-700 hover:text-blue-600">Debts</Link>
+          <Link href="/audit" class="font-semibold text-gray-700 hover:text-blue-600">Audit Logs</Link>
         </div>
-        
+
         <!-- Right side navigation -->
         <div class="flex items-center gap-4">
           <!-- Notification Dropdown -->
           <NotificationDropdown :notifications="notifications" />
-          
+
           <!-- User Menu -->
           <div class="flex items-center gap-4">
             <Link href="/profile" class="font-semibold text-gray-700 hover:text-blue-600">Profile</Link>
