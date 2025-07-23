@@ -13,21 +13,21 @@ class TransactionCategoryChangeNotification extends Notification
 
     /**
      * The transaction instance
-     * 
+     *
      * @var Transaction
      */
     protected $transaction;
 
     /**
      * The previous category
-     * 
+     *
      * @var string
      */
     protected $previousCategory;
 
     /**
      * Create a new notification instance.
-     * 
+     *
      * @param Transaction $transaction
      * @param string $previousCategory
      */
@@ -52,14 +52,19 @@ class TransactionCategoryChangeNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
+        $url = route('transactions.index');
+
         return (new MailMessage)
             ->subject('Transaction Category Changed')
-            ->line("A transaction has been recategorized.")
+            ->greeting('Hello!')
+            ->line("A transaction has been recategorized from '{$this->previousCategory}' to '{$this->transaction->category}'")
             ->line("Transaction Amount: $" . number_format($this->transaction->amount, 2))
             ->line("Previous Category: {$this->previousCategory}")
             ->line("New Category: {$this->transaction->category}")
-            ->action('View Transaction', route('transactions.index'))
-            ->line('Please review this change and update your budget tracking if necessary.');
+            ->line("Transaction Date: " . $this->transaction->date->format('F d, Y'))
+            ->line("Transaction Type: " . ucfirst($this->transaction->type))
+            ->action('View Transactions', $url)
+            ->line('Thank you for using ClearPath Financial!');
     }
 
     /**
@@ -70,6 +75,10 @@ class TransactionCategoryChangeNotification extends Notification
     public function toArray(object $notifiable): array
     {
         return [
+            'type' => 'transaction_category_change',
+            'title' => 'Transaction Category Changed',
+            'message' => "A transaction has been recategorized from '{$this->previousCategory}' to '{$this->transaction->category}' for $" . number_format($this->transaction->amount, 2),
+            'category' => 'Transaction Update',
             'transaction_id' => $this->transaction->id,
             'amount' => $this->transaction->amount,
             'previous_category' => $this->previousCategory,
@@ -77,4 +86,4 @@ class TransactionCategoryChangeNotification extends Notification
             'date' => $this->transaction->date,
         ];
     }
-} 
+}

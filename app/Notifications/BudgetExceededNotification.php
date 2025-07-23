@@ -30,22 +30,27 @@ class BudgetExceededNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['mail', 'database'];
     }
 
-    /**
+        /**
      * Get the mail representation of the notification.
      */
     public function toMail($notifiable)
     {
+        $overAmount = $this->budget->spent - $this->budget->limit;
+        $url = route('budgets.index');
+
         return (new MailMessage)
             ->subject('Budget Exceeded!')
+            ->greeting('Budget Alert!')
             ->line("You have exceeded the limit for category: {$this->budget->category}")
-            ->line("Limit: $" . number_format($this->budget->limit, 2))
-            ->line("Spent: $" . number_format($this->budget->spent, 2))
-            ->line("Over by: $" . number_format($this->budget->spent - $this->budget->limit, 2))
-            ->action('View Budgets', route('budgets.index'))
-            ->line('Consider reviewing your spending in this category.');
+            ->line("Category: {$this->budget->category}")
+            ->line("Monthly Limit: $" . number_format($this->budget->limit, 2))
+            ->line("Amount Spent: $" . number_format($this->budget->spent, 2))
+            ->line("Over Budget By: $" . number_format($overAmount, 2))
+            ->action('View Budgets', $url)
+            ->line('Please review your spending and adjust your budget if necessary.');
     }
 
     /**

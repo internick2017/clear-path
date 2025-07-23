@@ -13,7 +13,7 @@ class BudgetService
 {
     /**
      * Update budget spent amount when a transaction is created
-     * 
+     *
      * @param Transaction $transaction
      * @return void
      */
@@ -26,7 +26,7 @@ class BudgetService
 
     /**
      * Update budget spent amount when a transaction is updated
-     * 
+     *
      * @param Transaction $transaction
      * @param array $oldData
      * @return void
@@ -46,7 +46,7 @@ class BudgetService
 
     /**
      * Update budget spent amount when a transaction is deleted
-     * 
+     *
      * @param Transaction $transaction
      * @return void
      */
@@ -59,7 +59,7 @@ class BudgetService
 
     /**
      * Recalculate budget spent amount for a specific category and month
-     * 
+     *
      * @param User $user
      * @param string $category
      * @param string $date
@@ -68,7 +68,7 @@ class BudgetService
     public function recalculateBudgetSpent(User $user, string $category, string $date): void
     {
         $transactionDate = Carbon::parse($date);
-        
+
         $budget = Budget::where('user_id', $user->id)
             ->where('category', $category)
             ->whereMonth('month', $transactionDate->month)
@@ -97,7 +97,7 @@ class BudgetService
 
     /**
      * Check if a budget category is close to or has exceeded its limit
-     * 
+     *
      * @param User $user
      * @param string $category
      * @param float $amount
@@ -132,15 +132,35 @@ class BudgetService
      */
     public function resetMonthlyBudgets()
     {
-        Budget::where('month', '<', now()->startOfMonth())->update([
-            'spent' => 0,
-            'month' => now()->format('Y-m-d')
-        ]);
+        // Get all old budgets that need to be reset
+        $oldBudgets = Budget::where('month', '<', now()->startOfMonth())->get();
+
+        foreach ($oldBudgets as $budget) {
+            // Check if a budget already exists for the current month with same user and category
+            $existingBudget = Budget::where('user_id', $budget->user_id)
+                ->where('category', $budget->category)
+                ->whereMonth('month', now()->month)
+                ->whereYear('month', now()->year)
+                ->first();
+
+            if ($existingBudget) {
+                // If budget exists for current month, just reset the spent amount
+                $existingBudget->update(['spent' => 0]);
+                // Delete the old budget
+                $budget->delete();
+            } else {
+                // If no budget exists for current month, update the old budget
+                $budget->update([
+                    'spent' => 0,
+                    'month' => now()->format('Y-m-d')
+                ]);
+            }
+        }
     }
 
     /**
      * Create a new budget for a user
-     * 
+     *
      * @param User $user
      * @param string $category
      * @param float $limit
@@ -156,4 +176,4 @@ class BudgetService
             'month' => now()->format('Y-m-d')
         ]);
     }
-} 
+}

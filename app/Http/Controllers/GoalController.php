@@ -30,7 +30,7 @@ class GoalController extends Controller
     public function store(GoalRequest $request)
     {
         $data = $request->validated();
-        
+
         $request->user()->goals()->create([
             'title' => $data['title'],
             'target_amount' => $data['target_amount'],
@@ -39,6 +39,15 @@ class GoalController extends Controller
         ]);
 
         return redirect()->route('goals.index')->with('success', 'Goal created successfully');
+    }
+
+    public function show(Goal $goal)
+    {
+        $this->authorize('view', $goal);
+
+        return Inertia::render('Goals/Show', [
+            'goal' => $goal
+        ]);
     }
 
     public function edit(Goal $goal)
