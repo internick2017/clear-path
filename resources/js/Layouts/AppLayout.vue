@@ -40,11 +40,13 @@
             <!-- User Menu (Desktop) -->
             <div class="hidden lg:flex items-center space-x-4">
               <span class="text-gray-600 text-sm">{{ $page.props.auth?.user?.name }}</span>
-              <form method="POST" :action="route('logout')" class="inline">
-                <button type="submit" class="text-gray-700 hover:text-red-600 text-sm font-medium transition-colors">
-                  Salir
-                </button>
-              </form>
+              <Link 
+                :href="route('logout')" 
+                method="post" 
+                as="button"
+                class="text-gray-700 hover:text-red-600 text-sm font-medium transition-colors">
+                Salir
+              </Link>
             </div>
 
             <!-- Mobile menu button -->
@@ -97,12 +99,13 @@
             <div class="px-3 py-2">
               <NotificationDropdown :notifications="notifications" />
             </div>
-            <form method="POST" :action="route('logout')" class="block">
-              <button type="submit" 
-                      class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-                Salir
-              </button>
-            </form>
+            <Link 
+              :href="route('logout')" 
+              method="post" 
+              as="button"
+              class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+              Salir
+            </Link>
           </div>
         </div>
       </div>
@@ -131,6 +134,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
+import { Link } from '@inertiajs/vue3';
 import NotificationDropdown from '@/Components/NotificationDropdown.vue';
 
 const mobileMenuOpen = ref(false);

@@ -53,10 +53,41 @@
                   </option>
                 </datalist>
               </div>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <span class="text-xs text-gray-500">Sugerencias rápidas:</span>
+                <button 
+                  v-for="suggestion in popularCategories[form.type === 'expense' ? 'variable' : 'fixed']"
+                  :key="suggestion"
+                  @click="form.category = suggestion"
+                  class="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                >
+                  {{ suggestion }}
+                </button>
+              </div>
               <div v-if="form.errors.category" class="text-red-600 text-sm mt-1">{{ form.errors.category }}</div>
             </div>
-
-            <!-- Amount -->
+            <div v-if="form.type === 'expense'">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Gasto</label>
+              <div class="grid grid-cols-2 gap-4">
+                <label class="flex items-center p-4 border rounded-lg cursor-pointer transition-colors"
+                       :class="form.expense_type === 'fixed' ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'">
+                  <input type="radio" v-model="form.expense_type" value="fixed" class="mr-3" />
+                  <div>
+                    <div class="font-medium text-blue-700">Fijo</div>
+                    <div class="text-sm text-blue-600">Gastos recurrentes (renta, servicios, etc.)</div>
+                  </div>
+                </label>
+                <label class="flex items-center p-4 border rounded-lg cursor-pointer transition-colors"
+                       :class="form.expense_type === 'variable' ? 'border-purple-500 bg-purple-50' : 'border-gray-300 hover:border-gray-400'">
+                  <input type="radio" v-model="form.expense_type" value="variable" class="mr-3" />
+                  <div>
+                    <div class="font-medium text-purple-700">Variable</div>
+                    <div class="text-sm text-purple-600">Gastos ocasionales (comida, entretenimiento, etc.)</div>
+                  </div>
+                </label>
+              </div>
+              <div v-if="form.errors.expense_type" class="text-red-600 text-sm mt-1">{{ form.errors.expense_type }}</div>
+            </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Monto</label>
               <div class="relative">
@@ -128,6 +159,30 @@ defineOptions({ layout: AppLayout });
 const page = usePage();
 const categories = computed(() => page.props.categories || []);
 
+// Popular categories for quick selection
+const popularCategories = {
+  fixed: [
+    'Renta',
+    'Luz',
+    'Agua', 
+    'Internet',
+    'Transporte público',
+    'Seguro de auto',
+    'Teléfono',
+    'Suscripciones'
+  ],
+  variable: [
+    'Supermercado',
+    'Restaurantes',
+    'Gasolina',
+    'Entretenimiento',
+    'Ropa',
+    'Farmacia',
+    'Regalos',
+    'Viajes'
+  ]
+};
+
 // Set default date to today
 const today = new Date().toISOString().split('T')[0];
 
@@ -136,7 +191,8 @@ const form = useForm({
   category: '',
   amount: '',
   date: today,
-  note: ''
+  note: '',
+  expense_type: ''
 });
 
 function submit() {

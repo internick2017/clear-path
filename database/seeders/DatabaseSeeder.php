@@ -25,18 +25,71 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Create multiple financial records for the test user
-        Budget::factory()->count(5)->for($user)->create();
-        Transaction::factory()->count(50)->for($user)->create();
-        Goal::factory()->count(3)->for($user)->create();
-        Debt::factory()->count(4)->for($user)->create();
+        // Create Nick Granados user
+        $nickUser = User::firstOrCreate(
+            ['email' => 'nickgranados01@gmail.com'],
+            [
+                'name' => 'Nick Granados',
+                'password' => bcrypt('d165218l')
+            ]
+        );
 
-        // Optional: Create additional random users with their financial data
-        User::factory()->count(5)->create()->each(function ($user) {
-            Budget::factory()->count(3)->for($user)->create();
-            Transaction::factory()->count(20)->for($user)->create();
-            Goal::factory()->count(2)->for($user)->create();
-            Debt::factory()->count(2)->for($user)->create();
-        });
+        // Create sample transactions with expense types
+        $categories = [
+            'Groceries' => 'variable',
+            'Utilities' => 'fixed',
+            'Transportation' => 'fixed',
+            'Entertainment' => 'variable',
+            'Healthcare' => 'variable',
+            'Rent' => 'fixed',
+            'Salary' => 'income'
+        ];
+
+        foreach ($categories as $category => $type) {
+            // Create transactions for the last 3 months
+            for ($i = 0; $i < 3; $i++) {
+                $date = now()->subMonths($i);
+                $amount = $type === 'income' ? rand(3000, 5000) : rand(100, 800);
+
+                $user->transactions()->create([
+                    'type' => $type === 'income' ? 'income' : 'expense',
+                    'category' => $category,
+                    'amount' => $amount,
+                    'date' => $date->format('Y-m-d'),
+                    'expense_type' => $type === 'income' ? null : $type,
+                    'note' => "Sample $category transaction"
+                ]);
+            }
+        }
+
+        // Create budgets for current month
+        $budgetCategories = ['Groceries', 'Utilities', 'Transportation', 'Entertainment'];
+        foreach ($budgetCategories as $category) {
+            $user->budgets()->create([
+                'category' => $category,
+                'limit' => rand(300, 800),
+                'spent' => rand(50, 400),
+                'month' => now()->format('Y-m-d')
+            ]);
+        }
+
+        // Create a sample goal
+        $user->goals()->create([
+            'title' => 'Emergency Fund',
+            'target_amount' => 5000,
+            'current_amount' => 1200,
+            'deadline' => now()->addMonths(6)->format('Y-m-d')
+        ]);
+
+        // Create a sample debt
+        $user->debts()->create([
+            'name' => 'Credit Card',
+            'amount' => 2500,
+            'interest_rate' => 18.5,
+            'minimum_payment' => 125,
+            'due_date' => now()->addDays(15)->format('Y-m-d'),
+            'strategy' => 'snowball',
+            'status' => 'active'
+        ]);
     }
 }

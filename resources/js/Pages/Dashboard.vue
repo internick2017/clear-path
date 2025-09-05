@@ -17,17 +17,20 @@ const topExpenseCategories = computed(() => page.props.topExpenseCategories || [
 const activeGoals = computed(() => page.props.activeGoals || []);
 const activeDebts = computed(() => page.props.activeDebts || []);
 const recentTransactions = computed(() => page.props.recentTransactions || []);
+const financialHealthScore = computed(() => page.props.financialHealthScore || null);
 const chartData = computed(() => page.props.chartData || {});
 
 // Chart refs
 const monthlySpendingChart = ref(null);
 const budgetVsActualChart = ref(null);
 const goalProgressChart = ref(null);
+const fixedVsVariableChart = ref(null);
 
 // Chart instances for cleanup
 let monthlySpendingChartInstance = null;
 let budgetVsActualChartInstance = null;
 let goalProgressChartInstance = null;
+let fixedVsVariableChartInstance = null;
 
 // Helper functions
 function formatCurrency(amount) {
@@ -199,16 +202,16 @@ onMounted(() => {
     }
   }
 
-  // Goal Progress Chart
-  if (chartData.value.goalProgress && goalProgressChart.value && activeGoals.value.length > 0) {
-    console.log('Creating goal progress chart with data:', chartData.value.goalProgress);
+  // Fixed vs Variable Chart
+  if (chartData.value.fixedVsVariable && fixedVsVariableChart.value) {
+    console.log('Creating fixed vs variable chart with data:', chartData.value.fixedVsVariable);
     
     // Validate data before creating chart
-    if (isValidChartData(chartData.value.goalProgress) && hasMeaningfulData(chartData.value.goalProgress)) {
+    if (isValidChartData(chartData.value.fixedVsVariable) && hasMeaningfulData(chartData.value.fixedVsVariable)) {
       try {
-        goalProgressChartInstance = new Chart(goalProgressChart.value, {
-          type: 'doughnut',
-          data: chartData.value.goalProgress,
+        fixedVsVariableChartInstance = new Chart(fixedVsVariableChart.value, {
+          type: 'pie',
+          data: chartData.value.fixedVsVariable,
           options: {
             responsive: true,
             maintainAspectRatio: true,
@@ -224,14 +227,14 @@ onMounted(() => {
                   boxWidth: 12,
                   padding: 10,
                   font: {
-                    size: 11
+                    size: 12
                   }
                 }
               },
               tooltip: {
                 callbacks: {
                   label: function(context) {
-                    return context.label + ': ' + context.parsed + '%';
+                    return context.label + ': $' + context.parsed.toLocaleString();
                   }
                 }
               }
@@ -244,10 +247,10 @@ onMounted(() => {
           },
         });
       } catch (error) {
-        console.error('Error creating goal progress chart:', error);
+        console.error('Error creating fixed vs variable chart:', error);
       }
     } else {
-      console.log('Goal progress chart data is empty or invalid, skipping chart creation');
+      console.log('Fixed vs variable chart data is empty or invalid, skipping chart creation');
     }
   }
 });
@@ -262,6 +265,9 @@ onUnmounted(() => {
   }
   if (goalProgressChartInstance) {
     goalProgressChartInstance.destroy();
+  }
+  if (fixedVsVariableChartInstance) {
+    fixedVsVariableChartInstance.destroy();
   }
 });
 </script>
@@ -328,6 +334,82 @@ onUnmounted(() => {
         </div>
       </div>
 
+      <!-- Financial Health Score -->
+      <div v-if="financialHealthScore" class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6 sm:mb-8">
+        <div class="p-4 sm:p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base sm:text-lg font-semibold">Puntuación de Salud Financiera</h3>
+            <div class="flex items-center space-x-2">
+              <span :class="[
+                'px-3 py-1 rounded-full text-sm font-semibold',
+                financialHealthScore.grade.color === 'green' ? 'bg-green-100 text-green-800' :
+                financialHealthScore.grade.color === 'blue' ? 'bg-blue-100 text-blue-800' :
+                financialHealthScore.grade.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
+                financialHealthScore.grade.color === 'orange' ? 'bg-orange-100 text-orange-800' :
+                'bg-red-100 text-red-800'
+              ]">
+                {{ financialHealthScore.grade.grade }} - {{ financialHealthScore.grade.label }}
+              </span>
+            </div>
+          </div>
+          
+          <div class="flex items-center space-x-4">
+            <div class="flex-1">
+              <div class="w-full bg-gray-200 rounded-full h-4">
+                <div 
+                  class="h-4 rounded-full transition-all duration-1000 ease-out"
+                  :class="[
+                    financialHealthScore.grade.color === 'green' ? 'bg-green-500' :
+                    financialHealthScore.grade.color === 'blue' ? 'bg-blue-500' :
+                    financialHealthScore.grade.color === 'yellow' ? 'bg-yellow-500' :
+                    financialHealthScore.grade.color === 'orange' ? 'bg-orange-500' :
+                    'bg-red-500'
+                  ]"
+                  :style="{ width: financialHealthScore.percentage + '%' }"
+                ></div>
+              </div>
+              <div class="flex justify-between text-xs text-gray-500 mt-1">
+                <span>0</span>
+                <span>{{ financialHealthScore.score }}/100</span>
+                <span>100</span>
+              </div>
+            </div>
+            <div class="text-2xl sm:text-3xl font-bold" :class="[
+              financialHealthScore.grade.color === 'green' ? 'text-green-600' :
+              financialHealthScore.grade.color === 'blue' ? 'text-blue-600' :
+              financialHealthScore.grade.color === 'yellow' ? 'text-yellow-600' :
+              financialHealthScore.grade.color === 'orange' ? 'text-orange-600' :
+              'text-red-600'
+            ]">
+              {{ financialHealthScore.score }}
+            </div>
+          </div>
+          
+          <div class="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+            <div class="text-center">
+              <div class="font-medium text-gray-900">{{ financialHealthScore.breakdown.income_expense_ratio.toFixed(1) }}%</div>
+              <div class="text-gray-500">Gastos/Ingresos</div>
+            </div>
+            <div class="text-center">
+              <div class="font-medium text-gray-900">{{ financialHealthScore.breakdown.budget_compliance.toFixed(1) }}%</div>
+              <div class="text-gray-500">Cumplimiento Presupuesto</div>
+            </div>
+            <div class="text-center">
+              <div class="font-medium text-gray-900">{{ financialHealthScore.breakdown.savings_rate.toFixed(1) }}%</div>
+              <div class="text-gray-500">Tasa de Ahorro</div>
+            </div>
+            <div class="text-center">
+              <div class="font-medium text-gray-900">{{ financialHealthScore.breakdown.debt_ratio.toFixed(1) }}%</div>
+              <div class="text-gray-500">Ratio Deuda/Ingresos</div>
+            </div>
+            <div class="text-center">
+              <div class="font-medium text-gray-900">{{ financialHealthScore.breakdown.goal_progress.toFixed(1) }}%</div>
+              <div class="text-gray-500">Progreso Metas</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Charts Section -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
         <!-- Monthly Spending Chart -->
@@ -367,6 +449,27 @@ onUnmounted(() => {
             <div v-else class="relative w-full" style="max-height: 400px;">
               <canvas ref="budgetVsActualChart" class="w-full h-auto"></canvas>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fixed vs Variable Expenses Chart -->
+      <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+        <div class="p-4 sm:p-6">
+          <h3 class="text-base sm:text-lg font-semibold mb-4">Gastos Fijos vs Variables</h3>
+          <div v-if="!chartData.fixedVsVariable || !chartData.fixedVsVariable.datasets || chartData.fixedVsVariable.datasets[0].data.every(val => val === 0)" 
+               class="flex items-center justify-center h-64 text-gray-500">
+            <div class="text-center">
+              <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
+              </svg>
+              <p class="text-sm">No expense type data available</p>
+              <p class="text-xs">Add transactions with fixed/variable classification</p>
+            </div>
+          </div>
+          <div v-else class="relative w-full max-w-md mx-auto" style="max-height: 400px;">
+            <canvas ref="fixedVsVariableChart" class="w-full h-auto"></canvas>
           </div>
         </div>
       </div>

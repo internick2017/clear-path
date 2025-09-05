@@ -28,6 +28,7 @@ class TransactionRequest extends FormRequest
             'amount' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
             'date' => ['required', 'date', 'before_or_equal:today'],
             'note' => ['nullable', 'string', 'max:1000'],
+            'expense_type' => ['nullable', 'string', Rule::in(['fixed', 'variable'])],
         ];
     }
 
@@ -49,6 +50,7 @@ class TransactionRequest extends FormRequest
             'date.date' => 'The date must be a valid date.',
             'date.before_or_equal' => 'The date cannot be in the future.',
             'note.max' => 'The note cannot exceed 1000 characters.',
+            'expense_type.in' => 'El tipo de gasto debe ser fijo o variable.',
         ];
     }
 
@@ -63,30 +65,19 @@ class TransactionRequest extends FormRequest
             'amount' => 'amount',
             'date' => 'date',
             'note' => 'note',
+            'expense_type' => 'tipo de gasto',
         ];
     }
 
     /**
-     * Prepare the data for validation.
+     * Configure the validator instance.
      */
-    protected function prepareForValidation(): void
+    public function withValidator($validator): void
     {
-        // Ensure amount is properly formatted as decimal
-        if ($this->has('amount') && is_numeric($this->amount)) {
-            $this->merge([
-                'amount' => (float) $this->amount,
-            ]);
-        }
-
-        // Ensure date is in Y-m-d format (only if it's a valid date)
-        if ($this->has('date') && $this->date) {
-            try {
-                $this->merge([
-                    'date' => \Carbon\Carbon::parse($this->date)->format('Y-m-d'),
-                ]);
-            } catch (\Exception $e) {
-                // If date parsing fails, leave it as is for validation to handle
+        $validator->after(function ($validator) {
+            if ($this->type === 'expense' && empty($this->expense_type)) {
+                $validator->errors()->add('expense_type', 'El tipo de gasto es requerido para gastos.');
             }
-        }
+        });
     }
 } 

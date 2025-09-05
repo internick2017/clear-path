@@ -8,6 +8,7 @@ use App\Notifications\TransactionCategoryChangeNotification;
 use App\Notifications\BudgetExceededNotification;
 use App\Http\Requests\TransactionRequest;
 use App\Services\AuditService;
+use App\Services\CacheService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
@@ -37,9 +38,9 @@ class TransactionController extends Controller
             $query->where('type', $request->type);
         }
 
-        // Filter by category if provided
-        if ($request->filled('category')) {
-            $query->where('category', $request->category);
+        // Filter by expense type if provided
+        if ($request->filled('expense_type')) {
+            $query->where('expense_type', $request->expense_type);
         }
 
         $transactions = $query->paginate(15);
@@ -67,9 +68,25 @@ class TransactionController extends Controller
             ->whereYear('date', $currentYear)
             ->sum('amount');
 
+        $monthlyFixedExpenses = Auth::user()->transactions()
+            ->where('type', 'expense')
+            ->where('expense_type', 'fixed')
+            ->whereMonth('date', $currentMonth)
+            ->whereYear('date', $currentYear)
+            ->sum('amount');
+
+        $monthlyVariableExpenses = Auth::user()->transactions()
+            ->where('type', 'expense')
+            ->where('expense_type', 'variable')
+            ->whereMonth('date', $currentMonth)
+            ->whereYear('date', $currentYear)
+            ->sum('amount');
+
         $monthlySummary = [
             'income' => $monthlyIncome,
             'expenses' => $monthlyExpenses,
+            'fixed_expenses' => $monthlyFixedExpenses,
+            'variable_expenses' => $monthlyVariableExpenses,
             'net' => $monthlyIncome - $monthlyExpenses
         ];
 
@@ -77,7 +94,7 @@ class TransactionController extends Controller
             'transactions' => $transactions,
             'categories' => $categories,
             'monthlySummary' => $monthlySummary,
-            'filters' => $request->only(['month', 'year', 'type', 'category']),
+            'filters' => $request->only(['month', 'year', 'type', 'category', 'expense_type']),
             'success' => session('success'),
         ]);
     }
@@ -102,6 +119,9 @@ class TransactionController extends Controller
 
         // Log the transaction creation
         AuditService::logTransactionCreated($request->user(), $transaction, $request);
+
+        // Clear user cache after creating transaction
+        CacheService::clearUserCache($request->user());
 
         // Note: Budget checking and notification is handled by BudgetService
         // via the Transaction model's created event
@@ -137,6 +157,9 @@ class TransactionController extends Controller
         // Log the transaction update
         AuditService::logTransactionUpdated($request->user(), $transaction, $oldValues, $request);
 
+        // Clear user cache after updating transaction
+        CacheService::clearUserCache($request->user());
+
         // Notify if category changed
         if ($previousCategory !== $request->validated()['category']) {
             Notification::send($request->user(), new TransactionCategoryChangeNotification($transaction, $previousCategory));
@@ -154,6 +177,9 @@ class TransactionController extends Controller
         AuditService::logTransactionDeleted($request->user(), $transaction, $request);
 
         $transaction->delete();
+
+        // Clear user cache after deleting transaction
+        CacheService::clearUserCache($request->user());
 
         return redirect()->route('transactions.index')
             ->with('success', 'Transaction deleted successfully');

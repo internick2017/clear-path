@@ -18,20 +18,28 @@
       <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
         <div class="p-4 sm:p-6">
           <h3 class="text-base sm:text-lg font-semibold mb-4">Resumen del Mes</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div class="bg-green-50 p-3 sm:p-4 rounded">
               <div class="text-xs sm:text-sm text-green-600 font-medium">Ingresos</div>
               <div class="text-lg sm:text-2xl font-bold text-green-700">${{ formatCurrency(monthlySummary.income) }}</div>
             </div>
             <div class="bg-red-50 p-3 sm:p-4 rounded">
-              <div class="text-xs sm:text-sm text-red-600 font-medium">Gastos</div>
+              <div class="text-xs sm:text-sm text-red-600 font-medium">Gastos Totales</div>
               <div class="text-lg sm:text-2xl font-bold text-red-700">${{ formatCurrency(monthlySummary.expenses) }}</div>
             </div>
-            <div class="p-3 sm:p-4 rounded" :class="monthlySummary.net >= 0 ? 'bg-blue-50' : 'bg-orange-50'">
-              <div class="text-xs sm:text-sm font-medium" :class="monthlySummary.net >= 0 ? 'text-blue-600' : 'text-orange-600'">
+            <div class="bg-orange-50 p-3 sm:p-4 rounded">
+              <div class="text-xs sm:text-sm text-orange-600 font-medium">Gastos Fijos</div>
+              <div class="text-lg sm:text-xl font-bold text-orange-700">${{ formatCurrency(monthlySummary.fixed_expenses) }}</div>
+            </div>
+            <div class="bg-yellow-50 p-3 sm:p-4 rounded">
+              <div class="text-xs sm:text-sm text-yellow-600 font-medium">Gastos Variables</div>
+              <div class="text-lg sm:text-xl font-bold text-yellow-700">${{ formatCurrency(monthlySummary.variable_expenses) }}</div>
+            </div>
+            <div class="p-3 sm:p-4 rounded" :class="monthlySummary.net >= 0 ? 'bg-blue-50' : 'bg-red-50'">
+              <div class="text-xs sm:text-sm font-medium" :class="monthlySummary.net >= 0 ? 'text-blue-600' : 'text-red-600'">
                 Balance Neto
               </div>
-              <div class="text-lg sm:text-2xl font-bold" :class="monthlySummary.net >= 0 ? 'text-blue-700' : 'text-orange-700'">
+              <div class="text-lg sm:text-2xl font-bold" :class="monthlySummary.net >= 0 ? 'text-blue-700' : 'text-red-700'">
                 ${{ formatCurrency(monthlySummary.net) }}
               </div>
             </div>
@@ -69,12 +77,11 @@
               </select>
             </div>
             <div>
-                              <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Category</label>
-              <select v-model="filterForm.category" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                                  <option value="">All categories</option>
-                <option v-for="category in categories" :key="category" :value="category">
-                  {{ category }}
-                </option>
+              <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Tipo de Gasto</label>
+              <select v-model="filterForm.expense_type" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                <option value="">Todos los tipos</option>
+                <option value="fixed">Fijos</option>
+                <option value="variable">Variables</option>
               </select>
             </div>
           </form>
@@ -142,6 +149,7 @@
                 <tr>
                   <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                   <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                  <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo Gasto</th>
                   <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                   <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
                   <th class="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nota</th>
@@ -158,6 +166,13 @@
                           :class="transaction.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
                       {{ transaction.type === 'income' ? 'Ingreso' : 'Gasto' }}
                     </span>
+                  </td>
+                  <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
+                    <span v-if="transaction.type === 'expense'" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" 
+                          :class="transaction.expense_type === 'fixed' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'">
+                      {{ transaction.expense_type === 'fixed' ? 'Fijo' : transaction.expense_type === 'variable' ? 'Variable' : '-' }}
+                    </span>
+                    <span v-else class="text-gray-400">-</span>
                   </td>
                   <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                     {{ transaction.category }}
@@ -227,7 +242,8 @@ const filterForm = ref({
   month: filters.value.month || '',
   year: filters.value.year || '',
   type: filters.value.type || '',
-  category: filters.value.category || ''
+  category: filters.value.category || '',
+  expense_type: filters.value.expense_type || ''
 });
 
 // Generate months and years for filters
@@ -270,7 +286,8 @@ function clearFilters() {
     month: '',
     year: '',
     type: '',
-    category: ''
+    category: '',
+    expense_type: ''
   };
   router.get(route('transactions.index'), {}, {
     preserveState: true,
