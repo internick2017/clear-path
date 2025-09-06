@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Transaction;
 use App\Models\Budget;
+use App\Models\Debt;
 use App\Notifications\TransactionCategoryChangeNotification;
 use App\Notifications\BudgetExceededNotification;
 use App\Http\Requests\TransactionRequest;
@@ -108,14 +109,66 @@ class TransactionController extends Controller
             ->sort()
             ->values();
 
+        // Get active debts for debt payment option
+        $debts = Auth::user()->debts()
+            ->where('status', 'active')
+            ->select('id', 'name', 'amount')
+            ->get();
+
         return Inertia::render('TransactionCreate', [
-            'categories' => $categories
+            'categories' => $categories,
+            'debts' => $debts
         ]);
     }
 
     public function store(TransactionRequest $request)
     {
-        $transaction = $request->user()->transactions()->create($request->validated());
+        $validatedData = $request->validated();
+        $debtPayment = null;
+        
+        if ($validatedData['debt_id'] && $validatedData['type'] === 'expense') {
+            $debt = Debt::find($validatedData['debt_id']);
+            
+            if (!$debt || $debt->user_id !== $request->user()->id) {
+                return redirect()->back()
+                    ->withErrors(['debt_id' => 'Deuda no encontrada o no autorizada.']);
+            }
+
+            // Check what type of debt operation this is
+            if ($validatedData['is_debt_payment'] ?? false) {
+                // Actual debt payment - reduces debt balance
+                $result = $debt->createPaymentTransaction(
+                    $validatedData['amount'],
+                    $validatedData['date'],
+                    null, // payment method not in form yet
+                    $validatedData['note']
+                );
+                
+                $transaction = $result['transaction'];
+                $debtPayment = $result['payment'];
+                $actionMessage = 'Transacción y pago de deuda creados exitosamente';
+                
+            } elseif ($validatedData['is_debt_purchase'] ?? false) {
+                // Purchase with credit card - increases debt balance
+                $transaction = $debt->addPurchase(
+                    $validatedData['amount'],
+                    $validatedData['date'],
+                    $validatedData['category'],
+                    $validatedData['note']
+                );
+                
+                $actionMessage = 'Transacción creada y deuda aumentada exitosamente';
+                
+            } else {
+                // Just linked for tracking - no debt balance change
+                $transaction = $request->user()->transactions()->create($validatedData);
+                $actionMessage = 'Transacción vinculada a deuda para seguimiento';
+            }
+        } else {
+            // Regular transaction creation
+            $transaction = $request->user()->transactions()->create($validatedData);
+            $actionMessage = 'Transaction created successfully';
+        }
 
         // Log the transaction creation
         AuditService::logTransactionCreated($request->user(), $transaction, $request);
@@ -127,7 +180,7 @@ class TransactionController extends Controller
         // via the Transaction model's created event
 
         return redirect()->route('transactions.index')
-            ->with('success', 'Transaction created successfully');
+            ->with('success', $actionMessage);
     }
 
     public function edit(Transaction $transaction)
@@ -140,9 +193,16 @@ class TransactionController extends Controller
             ->sort()
             ->values();
 
+        // Get active debts for debt payment option
+        $debts = Auth::user()->debts()
+            ->where('status', 'active')
+            ->select('id', 'name', 'amount')
+            ->get();
+
         return Inertia::render('TransactionEdit', [
             'transaction' => $transaction,
-            'categories' => $categories
+            'categories' => $categories,
+            'debts' => $debts
         ]);
     }
 

@@ -29,6 +29,9 @@ class TransactionRequest extends FormRequest
             'date' => ['required', 'date', 'before_or_equal:today'],
             'note' => ['nullable', 'string', 'max:1000'],
             'expense_type' => ['nullable', 'string', Rule::in(['fixed', 'variable'])],
+            'debt_id' => ['nullable', 'integer', 'exists:debts,id'],
+            'is_debt_payment' => ['nullable', 'boolean'],
+            'is_debt_purchase' => ['nullable', 'boolean'],
         ];
     }
 
@@ -51,6 +54,7 @@ class TransactionRequest extends FormRequest
             'date.before_or_equal' => 'The date cannot be in the future.',
             'note.max' => 'The note cannot exceed 1000 characters.',
             'expense_type.in' => 'El tipo de gasto debe ser fijo o variable.',
+            'debt_id.exists' => 'La deuda seleccionada no existe.',
         ];
     }
 
@@ -66,6 +70,7 @@ class TransactionRequest extends FormRequest
             'date' => 'date',
             'note' => 'note',
             'expense_type' => 'tipo de gasto',
+            'debt_id' => 'deuda',
         ];
     }
 

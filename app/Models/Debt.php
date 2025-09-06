@@ -40,6 +40,11 @@ class Debt extends Model
         return $this->hasMany(DebtPayment::class);
     }
 
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
     public function addPayment(float $amount, string $paymentDate, string $paymentMethod = null, string $note = null)
     {
         // Calculate interest and principal portions
@@ -62,6 +67,52 @@ class Debt extends Model
         }
 
         return $payment;
+    }
+
+    public function createPaymentTransaction(float $amount, string $paymentDate, string $paymentMethod = null, string $note = null)
+    {
+        // Create the transaction record
+        $transaction = $this->transactions()->create([
+            'user_id' => $this->user_id,
+            'type' => 'expense',
+            'category' => 'Debt Payment',
+            'amount' => $amount,
+            'date' => $paymentDate,
+            'note' => $note ? "Pago de deuda: {$this->name}. {$note}" : "Pago de deuda: {$this->name}",
+            'expense_type' => 'fixed'
+        ]);
+
+        // Create the debt payment record
+        $payment = $this->addPayment($amount, $paymentDate, $paymentMethod, $note);
+
+        return [
+            'transaction' => $transaction,
+            'payment' => $payment
+        ];
+    }
+
+    public function addPurchase(float $amount, string $purchaseDate, string $category, string $note = null)
+    {
+        // Create the transaction record
+        $transaction = $this->transactions()->create([
+            'user_id' => $this->user_id,
+            'type' => 'expense',
+            'category' => $category,
+            'amount' => $amount,
+            'date' => $purchaseDate,
+            'note' => $note ? "Compra con {$this->name}: {$note}" : "Compra con {$this->name}",
+            'expense_type' => 'variable'
+        ]);
+
+        // Increase the debt amount
+        $this->increment('amount', $amount);
+
+        // If debt was marked as paid, reactivate it
+        if ($this->status === 'paid') {
+            $this->markAsActive();
+        }
+
+        return $transaction;
     }
 
     public function getRemainingBalance(): float

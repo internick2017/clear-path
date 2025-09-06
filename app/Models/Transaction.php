@@ -12,7 +12,7 @@ class Transaction extends Model
     use HasFactory;
     
     protected $fillable = [
-        'user_id', 'type', 'category', 'amount', 'date', 'note', 'expense_type'
+        'user_id', 'type', 'category', 'amount', 'date', 'note', 'expense_type', 'debt_id'
     ];
 
     protected $casts = [
@@ -50,5 +50,10 @@ class Transaction extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function debt()
+    {
+        return $this->belongsTo(Debt::class);
     }
 }

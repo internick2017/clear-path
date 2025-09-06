@@ -20,23 +20,45 @@ class QueryOptimizationService
         $month = $month ?? now()->month;
         $year = $year ?? now()->year;
 
-        $summary = DB::table('transactions')
-            ->selectRaw('
-                SUM(CASE WHEN type = "income" THEN amount ELSE 0 END) as total_income,
-                SUM(CASE WHEN type = "expense" THEN amount ELSE 0 END) as total_expenses,
-                COUNT(*) as total_transactions
-            ')
-            ->where('user_id', $user->id)
-            ->whereMonth('date', $month)
-            ->whereYear('date', $year)
-            ->first();
+        try {
+            $summary = DB::table('transactions')
+                ->selectRaw('
+                    SUM(CASE WHEN type = "income" THEN amount ELSE 0 END) as total_income,
+                    SUM(CASE WHEN type = "expense" THEN amount ELSE 0 END) as total_expenses,
+                    COUNT(*) as total_transactions
+                ')
+                ->where('user_id', $user->id)
+                ->whereMonth('date', $month)
+                ->whereYear('date', $year)
+                ->first();
 
-        return [
-            'income' => (float) ($summary->total_income ?? 0),
-            'expenses' => (float) ($summary->total_expenses ?? 0),
-            'net' => (float) (($summary->total_income ?? 0) - ($summary->total_expenses ?? 0)),
-            'total_transactions' => (int) ($summary->total_transactions ?? 0),
-        ];
+            // Handle null summary or empty results
+            if (!$summary) {
+                return [
+                    'income' => 0.0,
+                    'expenses' => 0.0,
+                    'net' => 0.0,
+                    'total_transactions' => 0,
+                ];
+            }
+
+            $income = (float) ($summary->total_income ?? 0);
+            $expenses = (float) ($summary->total_expenses ?? 0);
+
+            return [
+                'income' => $income,
+                'expenses' => $expenses,
+                'net' => $income - $expenses,
+                'total_transactions' => (int) ($summary->total_transactions ?? 0),
+            ];
+        } catch (\Exception $e) {
+            return [
+                'income' => 0.0,
+                'expenses' => 0.0,
+                'net' => 0.0,
+                'total_transactions' => 0,
+            ];
+        }
     }
 
     /**
@@ -47,24 +69,32 @@ class QueryOptimizationService
         $month = $month ?? now()->month;
         $year = $year ?? now()->year;
 
-        return DB::table('transactions')
-            ->selectRaw('category, SUM(amount) as total_amount, COUNT(*) as transaction_count')
-            ->where('user_id', $user->id)
-            ->where('type', 'expense')
-            ->whereMonth('date', $month)
-            ->whereYear('date', $year)
-            ->groupBy('category')
-            ->orderByDesc('total_amount')
-            ->limit($limit)
-            ->get()
-            ->map(function ($item) {
+        try {
+            $results = DB::table('transactions')
+                ->selectRaw('category, SUM(amount) as total_amount, COUNT(*) as transaction_count')
+                ->where('user_id', $user->id)
+                ->where('type', 'expense')
+                ->whereMonth('date', $month)
+                ->whereYear('date', $year)
+                ->groupBy('category')
+                ->orderByDesc('total_amount')
+                ->limit($limit)
+                ->get();
+
+            if ($results->isEmpty()) {
+                return [];
+            }
+
+            return $results->map(function ($item) {
                 return [
-                    'category' => $item->category,
-                    'total' => (float) $item->total_amount,
-                    'transaction_count' => (int) $item->transaction_count,
+                    'category' => $item->category ?? 'Sin categoría',
+                    'total' => (float) ($item->total_amount ?? 0),
+                    'transaction_count' => (int) ($item->transaction_count ?? 0),
                 ];
-            })
-            ->toArray();
+            })->toArray();
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 
     /**
@@ -75,45 +105,52 @@ class QueryOptimizationService
         $month = $month ?? now()->month;
         $year = $year ?? now()->year;
 
-        // Get budgets with actual spending in single query
-        $budgets = DB::table('budgets as b')
-            ->selectRaw('
-                b.id,
-                b.category,
-                b.limit,
-                b.spent as budget_spent,
-                COALESCE(SUM(t.amount), 0) as actual_spent
-            ')
-            ->leftJoin('transactions as t', function ($join) use ($month, $year) {
-                $join->on('b.category', '=', 't.category')
-                    ->where('t.type', '=', 'expense')
-                    ->whereMonth('t.date', $month)
-                    ->whereYear('t.date', $year);
-            })
-            ->where('b.user_id', $user->id)
-            ->whereMonth('b.month', $month)
-            ->whereYear('b.month', $year)
-            ->groupBy('b.id', 'b.category', 'b.limit', 'b.spent')
-            ->get()
-            ->map(function ($budget) {
-                $actualSpent = (float) $budget->actual_spent;
-                $budgetSpent = (float) $budget->budget_spent;
+        try {
+            // Get budgets with actual spending in single query
+            $results = DB::table('budgets as b')
+                ->selectRaw('
+                    b.id,
+                    b.category,
+                    b.limit,
+                    b.spent as budget_spent,
+                    COALESCE(SUM(t.amount), 0) as actual_spent
+                ')
+                ->leftJoin('transactions as t', function ($join) use ($month, $year, $user) {
+                    $join->on('b.category', '=', 't.category')
+                        ->where('t.user_id', '=', $user->id)
+                        ->where('t.type', '=', 'expense')
+                        ->whereMonth('t.date', $month)
+                        ->whereYear('t.date', $year);
+                })
+                ->where('b.user_id', $user->id)
+                ->whereMonth('b.month', $month)
+                ->whereYear('b.month', $year)
+                ->groupBy('b.id', 'b.category', 'b.limit', 'b.spent')
+                ->get();
+
+            if ($results->isEmpty()) {
+                return [];
+            }
+
+            return $results->map(function ($budget) {
+                $actualSpent = (float) ($budget->actual_spent ?? 0);
+                $budgetSpent = (float) ($budget->budget_spent ?? 0);
                 $spent = max($actualSpent, $budgetSpent);
-                $limit = (float) $budget->limit;
+                $limit = (float) ($budget->limit ?? 0);
 
                 return [
                     'id' => $budget->id,
-                    'category' => $budget->category,
+                    'category' => $budget->category ?? 'Sin categoría',
                     'limit' => $limit,
                     'spent' => $spent,
                     'remaining' => $limit - $spent,
                     'percentage' => $limit > 0 ? ($spent / $limit) * 100 : 0,
                     'is_exceeded' => $spent > $limit,
                 ];
-            })
-            ->toArray();
-
-        return $budgets;
+            })->toArray();
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 
     /**
@@ -121,35 +158,43 @@ class QueryOptimizationService
      */
     public static function getGoalData(User $user): array
     {
-        return DB::table('goals')
-            ->selectRaw('
-                id,
-                title,
-                target_amount,
-                current_amount,
-                deadline,
-                DATEDIFF(deadline, CURDATE()) as days_remaining
-            ')
-            ->where('user_id', $user->id)
-            ->whereRaw('CAST(current_amount AS DECIMAL(10,2)) < CAST(target_amount AS DECIMAL(10,2))')
-            ->where('deadline', '>', now()->format('Y-m-d'))
-            ->orderBy('deadline', 'asc')
-            ->get()
-            ->map(function ($goal) {
-                $targetAmount = (float) $goal->target_amount;
-                $currentAmount = (float) $goal->current_amount;
+        try {
+            $results = DB::table('goals')
+                ->selectRaw('
+                    id,
+                    title,
+                    target_amount,
+                    current_amount,
+                    deadline,
+                    DATEDIFF(deadline, CURDATE()) as days_remaining
+                ')
+                ->where('user_id', $user->id)
+                ->whereRaw('CAST(COALESCE(current_amount, 0) AS DECIMAL(10,2)) < CAST(target_amount AS DECIMAL(10,2))')
+                ->where('deadline', '>', now()->format('Y-m-d'))
+                ->orderBy('deadline', 'asc')
+                ->get();
+
+            if ($results->isEmpty()) {
+                return [];
+            }
+
+            return $results->map(function ($goal) {
+                $targetAmount = (float) ($goal->target_amount ?? 0);
+                $currentAmount = (float) ($goal->current_amount ?? 0);
 
                 return [
                     'id' => $goal->id,
-                    'title' => $goal->title,
+                    'title' => $goal->title ?? 'Sin título',
                     'target_amount' => $targetAmount,
                     'current_amount' => $currentAmount,
                     'deadline' => $goal->deadline,
                     'progress_percentage' => $targetAmount > 0 ? ($currentAmount / $targetAmount) * 100 : 0,
-                    'days_remaining' => (int) $goal->days_remaining,
+                    'days_remaining' => (int) ($goal->days_remaining ?? 0),
                 ];
-            })
-            ->toArray();
+            })->toArray();
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 
     /**
@@ -157,41 +202,49 @@ class QueryOptimizationService
      */
     public static function getDebtData(User $user): array
     {
-        return DB::table('debts as d')
-            ->selectRaw('
-                d.id,
-                d.name,
-                d.amount,
-                d.minimum_payment,
-                d.due_date,
-                d.status,
-                DATEDIFF(d.due_date, CURDATE()) as days_until_due,
-                COALESCE(SUM(dp.amount), 0) as total_paid
-            ')
-            ->leftJoin('debt_payments as dp', 'd.id', '=', 'dp.debt_id')
-            ->where('d.user_id', $user->id)
-            ->where('d.status', 'active')
-            ->groupBy('d.id', 'd.name', 'd.amount', 'd.minimum_payment', 'd.due_date', 'd.status')
-            ->orderBy('d.due_date', 'asc')
-            ->get()
-            ->map(function ($debt) {
-                $originalAmount = (float) $debt->amount;
-                $totalPaid = (float) $debt->total_paid;
+        try {
+            $results = DB::table('debts as d')
+                ->selectRaw('
+                    d.id,
+                    d.name,
+                    d.amount,
+                    d.minimum_payment,
+                    d.due_date,
+                    d.status,
+                    DATEDIFF(d.due_date, CURDATE()) as days_until_due,
+                    COALESCE(SUM(dp.amount), 0) as total_paid
+                ')
+                ->leftJoin('debt_payments as dp', 'd.id', '=', 'dp.debt_id')
+                ->where('d.user_id', $user->id)
+                ->where('d.status', 'active')
+                ->groupBy('d.id', 'd.name', 'd.amount', 'd.minimum_payment', 'd.due_date', 'd.status')
+                ->orderBy('d.due_date', 'asc')
+                ->get();
+
+            if ($results->isEmpty()) {
+                return [];
+            }
+
+            return $results->map(function ($debt) {
+                $originalAmount = (float) ($debt->amount ?? 0);
+                $totalPaid = (float) ($debt->total_paid ?? 0);
                 $remainingBalance = $originalAmount - $totalPaid;
 
                 return [
                     'id' => $debt->id,
-                    'name' => $debt->name,
+                    'name' => $debt->name ?? 'Sin nombre',
                     'balance' => $originalAmount,
-                    'remaining_balance' => $remainingBalance,
-                    'minimum_payment' => (float) $debt->minimum_payment,
+                    'remaining_balance' => max(0, $remainingBalance),
+                    'minimum_payment' => (float) ($debt->minimum_payment ?? 0),
                     'due_date' => $debt->due_date,
-                    'days_until_due' => (int) $debt->days_until_due,
+                    'days_until_due' => (int) ($debt->days_until_due ?? 0),
                     'total_paid' => $totalPaid,
                     'payment_progress' => $originalAmount > 0 ? ($totalPaid / $originalAmount) * 100 : 0,
                 ];
-            })
-            ->toArray();
+            })->toArray();
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 
     /**
@@ -199,23 +252,31 @@ class QueryOptimizationService
      */
     public static function getRecentTransactions(User $user, int $limit = 5): array
     {
-        return DB::table('transactions')
-            ->select('id', 'type', 'category', 'amount', 'date', 'note')
-            ->where('user_id', $user->id)
-            ->orderBy('date', 'desc')
-            ->limit($limit)
-            ->get()
-            ->map(function ($transaction) {
+        try {
+            $results = DB::table('transactions')
+                ->select('id', 'type', 'category', 'amount', 'date', 'note')
+                ->where('user_id', $user->id)
+                ->orderBy('date', 'desc')
+                ->limit($limit)
+                ->get();
+
+            if ($results->isEmpty()) {
+                return [];
+            }
+
+            return $results->map(function ($transaction) {
                 return [
                     'id' => $transaction->id,
-                    'type' => $transaction->type,
-                    'category' => $transaction->category,
-                    'amount' => (float) $transaction->amount,
+                    'type' => $transaction->type ?? 'expense',
+                    'category' => $transaction->category ?? 'Sin categoría',
+                    'amount' => (float) ($transaction->amount ?? 0),
                     'date' => $transaction->date,
-                    'note' => $transaction->note,
+                    'note' => $transaction->note ?? '',
                 ];
-            })
-            ->toArray();
+            })->toArray();
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 
     /**

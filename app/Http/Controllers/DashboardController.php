@@ -15,11 +15,10 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        // Create sample data if none exists (for testing purposes)
-        // Skip sample data creation during testing to avoid interference
-        if ($user->transactions()->count() === 0 && !app()->environment('testing')) {
-            $this->createSampleData($user);
-        }
+        // Sample data creation removed - data should be created via seeders
+        // if ($user->transactions()->count() === 0 && !app()->environment('testing')) {
+        //     $this->createSampleData($user);
+        // }
 
         // Get cached dashboard data
         $dashboardData = CacheService::getDashboardData($user);
@@ -127,6 +126,29 @@ class DashboardController extends Controller
         $limits = [];
         $actuals = [];
 
+        // Handle empty budgets
+        if (empty($budgets)) {
+            return [
+                'labels' => ['Sin presupuestos'],
+                'datasets' => [
+                    [
+                        'label' => 'Budget Limit',
+                        'data' => [0],
+                        'backgroundColor' => 'rgba(59, 130, 246, 0.8)',
+                        'borderColor' => 'rgb(59, 130, 246)',
+                        'borderWidth' => 1,
+                    ],
+                    [
+                        'label' => 'Actual Spent',
+                        'data' => [0],
+                        'backgroundColor' => 'rgba(239, 68, 68, 0.8)',
+                        'borderColor' => 'rgb(239, 68, 68)',
+                        'borderWidth' => 1,
+                    ],
+                ],
+            ];
+        }
+
         foreach ($budgets as $budget) {
             $categories[] = $budget['category'];
             $limits[] = (float) $budget['limit'];
@@ -170,9 +192,24 @@ class DashboardController extends Controller
             'rgba(139, 92, 246, 0.8)',
         ];
 
+        // Handle empty goals
+        if (empty($goals)) {
+            return [
+                'labels' => ['Sin metas'],
+                'datasets' => [
+                    [
+                        'label' => 'Progress %',
+                        'data' => [0],
+                        'backgroundColor' => ['rgba(200, 200, 200, 0.8)'],
+                        'borderWidth' => 1,
+                    ],
+                ],
+            ];
+        }
+
         foreach ($goals as $index => $goal) {
             $goalNames[] = $goal['title'];
-            $progressData[] = $goal['progress_percentage'];
+            $progressData[] = $goal['progress_percentage'] ?? 0;
         }
 
         return [
@@ -232,8 +269,13 @@ class DashboardController extends Controller
         $score = 0;
         $maxScore = 100;
 
+        // Handle empty data
+        if (empty($dashboardData)) {
+            return 0;
+        }
+
         // Income vs Expenses ratio (30 points)
-        $monthlySummary = $dashboardData['monthlySummary'];
+        $monthlySummary = $dashboardData['monthlySummary'] ?? ['income' => 0, 'expenses' => 0, 'net' => 0];
         if ($monthlySummary['income'] > 0) {
             $expenseRatio = $monthlySummary['expenses'] / $monthlySummary['income'];
             if ($expenseRatio <= 0.5) $score += 30; // Excellent (<50% of income)
@@ -243,9 +285,9 @@ class DashboardController extends Controller
         }
 
         // Budget compliance (25 points)
-        $budgets = $dashboardData['budgets'];
+        $budgets = $dashboardData['budgets'] ?? [];
         if (count($budgets) > 0) {
-            $compliantBudgets = count(array_filter($budgets, fn($b) => !$b['is_exceeded']));
+            $compliantBudgets = count(array_filter($budgets, fn($b) => !($b['is_exceeded'] ?? false)));
             $complianceRate = $compliantBudgets / count($budgets);
             $score += (int) ($complianceRate * 25);
         }
@@ -260,7 +302,7 @@ class DashboardController extends Controller
         }
 
         // Debt management (15 points)
-        $activeDebts = $dashboardData['activeDebts'];
+        $activeDebts = $dashboardData['activeDebts'] ?? [];
         if (count($activeDebts) === 0) {
             $score += 15; // No debt = excellent
         } else {
@@ -274,7 +316,7 @@ class DashboardController extends Controller
         }
 
         // Goal progress (10 points)
-        $activeGoals = $dashboardData['activeGoals'];
+        $activeGoals = $dashboardData['activeGoals'] ?? [];
         if (count($activeGoals) > 0) {
             $avgProgress = array_sum(array_column($activeGoals, 'progress_percentage')) / count($activeGoals);
             $score += (int) ($avgProgress * 0.1); // Up to 10 points based on average progress
@@ -286,7 +328,7 @@ class DashboardController extends Controller
             'grade' => $this->getHealthGrade($score),
             'breakdown' => [
                 'income_expense_ratio' => $monthlySummary['income'] > 0 ? ($monthlySummary['expenses'] / $monthlySummary['income']) * 100 : 100,
-                'budget_compliance' => count($budgets) > 0 ? (count(array_filter($budgets, fn($b) => !$b['is_exceeded'])) / count($budgets)) * 100 : 0,
+                'budget_compliance' => count($budgets) > 0 ? (count(array_filter($budgets, fn($b) => !($b['is_exceeded'] ?? false))) / count($budgets)) * 100 : 0,
                 'savings_rate' => $monthlySummary['income'] > 0 ? ($monthlySummary['net'] / $monthlySummary['income']) * 100 : 0,
                 'debt_ratio' => count($activeDebts) > 0 && $monthlySummary['income'] > 0 ?
                     (array_sum(array_column($activeDebts, 'balance')) / ($monthlySummary['income'] * 12)) * 100 : 0,

@@ -88,6 +88,68 @@
               </div>
               <div v-if="form.errors.expense_type" class="text-red-600 text-sm mt-1">{{ form.errors.expense_type }}</div>
             </div>
+
+            <!-- Debt Relationship Option (only for expenses) -->
+            <div v-if="form.type === 'expense' && debts.length > 0">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Relación con Deudas</label>
+              <div class="space-y-3">
+                <!-- No debt relationship -->
+                <label class="flex items-center p-3 border rounded-lg cursor-pointer transition-colors"
+                       :class="!form.debt_id ? 'border-gray-500 bg-gray-50' : 'border-gray-300 hover:border-gray-400'">
+                  <input type="radio" v-model="form.debt_id" value="" @change="form.is_debt_payment = false; form.is_debt_purchase = false" class="mr-3" />
+                  <div>
+                    <div class="font-medium text-gray-700">Sin relación con deudas</div>
+                    <div class="text-sm text-gray-600">Gasto regular independiente</div>
+                  </div>
+                </label>
+                
+                <!-- Debt relationship options -->
+                <div class="space-y-2">
+                  <div v-for="debt in debts" :key="debt.id" class="border rounded-lg p-3">
+                    <!-- Link to debt (tracking only) -->
+                    <label class="flex items-center cursor-pointer transition-colors mb-2"
+                           :class="form.debt_id == debt.id && !form.is_debt_payment && !form.is_debt_purchase ? 'text-blue-700' : 'text-gray-700'">
+                      <input type="radio" v-model="form.debt_id" :value="debt.id" @change="form.is_debt_payment = false; form.is_debt_purchase = false" class="mr-3" />
+                      <div class="flex-1">
+                        <div class="font-medium">📋 Relacionar con: {{ debt.name }}</div>
+                        <div class="text-sm text-gray-600">Solo para seguimiento, no afecta la deuda</div>
+                      </div>
+                    </label>
+                    
+                    <!-- Purchase with debt (increases balance) -->
+                    <label class="flex items-center cursor-pointer transition-colors mb-2 ml-6 p-2 rounded"
+                           :class="form.debt_id == debt.id && form.is_debt_purchase ? 'bg-red-50 border-red-200 text-red-700' : 'text-gray-600 hover:bg-gray-50'">
+                      <input type="radio" 
+                             :name="'debt-purchase-' + debt.id"
+                             :value="true" 
+                             @change="form.debt_id = debt.id; form.is_debt_purchase = true; form.is_debt_payment = false" 
+                             class="mr-3" />
+                      <div class="flex-1">
+                        <div class="font-medium">💳 Compra con: {{ debt.name }}</div>
+                        <div class="text-sm">Aumenta el saldo de la deuda</div>
+                      </div>
+                    </label>
+                    
+                    <!-- Actual debt payment -->
+                    <label class="flex items-center cursor-pointer transition-colors ml-6 p-2 rounded"
+                           :class="form.debt_id == debt.id && form.is_debt_payment ? 'bg-green-50 border-green-200 text-green-700' : 'text-gray-600 hover:bg-gray-50'">
+                      <input type="radio" 
+                             :name="'debt-payment-' + debt.id"
+                             :value="true" 
+                             @change="form.debt_id = debt.id; form.is_debt_payment = true; form.is_debt_purchase = false" 
+                             class="mr-3" />
+                      <div class="flex-1">
+                        <div class="font-medium">💰 Pago de deuda: {{ debt.name }}</div>
+                        <div class="text-sm">Reduce saldo restante: ${{ debt.amount }}</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div v-if="form.errors.debt_id" class="text-red-600 text-sm mt-1">{{ form.errors.debt_id }}</div>
+              <div v-if="form.errors.is_debt_payment" class="text-red-600 text-sm mt-1">{{ form.errors.is_debt_payment }}</div>
+              <div v-if="form.errors.is_debt_purchase" class="text-red-600 text-sm mt-1">{{ form.errors.is_debt_purchase }}</div>
+            </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Monto</label>
               <div class="relative">
@@ -158,6 +220,7 @@ defineOptions({ layout: AppLayout });
 
 const page = usePage();
 const categories = computed(() => page.props.categories || []);
+const debts = computed(() => page.props.debts || []);
 
 // Popular categories for quick selection
 const popularCategories = {
@@ -192,7 +255,10 @@ const form = useForm({
   amount: '',
   date: today,
   note: '',
-  expense_type: ''
+  expense_type: '',
+  debt_id: '',
+  is_debt_payment: false,
+  is_debt_purchase: false
 });
 
 function submit() {

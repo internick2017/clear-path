@@ -105,22 +105,38 @@ class CacheService
      */
     private static function generateDashboardData(User $user): array
     {
-        // Use QueryOptimizationService for better performance
-        $monthlySummary = QueryOptimizationService::getMonthlySummary($user);
-        $topExpenseCategories = QueryOptimizationService::getTopExpenseCategories($user);
-        $budgets = QueryOptimizationService::getBudgetData($user);
-        $activeGoals = QueryOptimizationService::getGoalData($user);
-        $activeDebts = QueryOptimizationService::getDebtData($user);
-        $recentTransactions = QueryOptimizationService::getRecentTransactions($user);
+        try {
+            // Use QueryOptimizationService for better performance
+            $monthlySummary = QueryOptimizationService::getMonthlySummary($user) ?? [
+                'income' => 0,
+                'expenses' => 0,
+                'net' => 0
+            ];
+            $topExpenseCategories = QueryOptimizationService::getTopExpenseCategories($user) ?? [];
+            $budgets = QueryOptimizationService::getBudgetData($user) ?? [];
+            $activeGoals = QueryOptimizationService::getGoalData($user) ?? [];
+            $activeDebts = QueryOptimizationService::getDebtData($user) ?? [];
+            $recentTransactions = QueryOptimizationService::getRecentTransactions($user) ?? [];
 
-        return [
-            'monthlySummary' => $monthlySummary,
-            'topExpenseCategories' => $topExpenseCategories,
-            'budgets' => $budgets,
-            'activeGoals' => $activeGoals,
-            'activeDebts' => $activeDebts,
-            'recentTransactions' => $recentTransactions,
-        ];
+            return [
+                'monthlySummary' => $monthlySummary,
+                'topExpenseCategories' => $topExpenseCategories,
+                'budgets' => $budgets,
+                'activeGoals' => $activeGoals,
+                'activeDebts' => $activeDebts,
+                'recentTransactions' => $recentTransactions,
+            ];
+        } catch (\Exception $e) {
+            // Return empty data structure on error
+            return [
+                'monthlySummary' => ['income' => 0, 'expenses' => 0, 'net' => 0],
+                'topExpenseCategories' => [],
+                'budgets' => [],
+                'activeGoals' => [],
+                'activeDebts' => [],
+                'recentTransactions' => [],
+            ];
+        }
     }
 
     /**
