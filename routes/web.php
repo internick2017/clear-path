@@ -7,6 +7,7 @@ use App\Http\Controllers\DebtController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\Settings\CurrencyController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -60,6 +61,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Audit routes
     Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
     Route::get('/audit/{modelType}/{modelId}', [AuditController::class, 'show'])->name('audit.show');
+
+    // Settings routes
+    Route::get('/settings/currency', [CurrencyController::class, 'show'])->name('settings.currency');
+    Route::patch('/settings/currency', [CurrencyController::class, 'update'])->name('settings.currency.update');
 });
 
 Route::get('/', function () {

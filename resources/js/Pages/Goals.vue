@@ -67,8 +67,8 @@
               <!-- Amount Display -->
               <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
                 <div class="text-right sm:text-left">
-                  <span class="font-bold text-green-700 text-lg sm:text-xl">${{ Number(goal.current_amount).toFixed(2) }}</span>
-                  <span class="text-gray-500 text-sm sm:text-base"> / ${{ Number(goal.target_amount).toFixed(2) }}</span>
+                  <span class="font-bold text-green-700 text-lg sm:text-xl">{{ formatCurrency(goal.current_amount, userCurrency) }}</span>
+                  <span class="text-gray-500 text-sm sm:text-base"> / {{ formatCurrency(goal.target_amount, userCurrency) }}</span>
                 </div>
                 <div class="text-sm text-gray-500 text-center sm:text-right">
                   {{ daysRemaining(goal) }} days remaining
@@ -78,7 +78,7 @@
               <!-- Manual Deposit Form -->
               <form @submit.prevent="addAmount(goal)" class="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
                 <div class="relative flex-1">
-                  <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+                  <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">{{ getCurrencySymbol(userCurrency) }}</span>
                   <input 
                     type="number" 
                     v-model.number="amounts[goal.id]" 
@@ -104,12 +104,23 @@
 
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ref } from 'vue';
+import { ref, computed, watchEffect } from 'vue';
+import { useCurrency } from '@/composables/useCurrency.js';
 import { router, usePage, Link } from '@inertiajs/vue3';
 
 defineOptions({ layout: AppLayout })
 
 const page = usePage();
+const { formatCurrency, getCurrencySymbol, setDefaultCurrency } = useCurrency();
+
+// Get user's display currency
+const userCurrency = computed(() => page.props.auth.user?.display_currency || 'USD');
+
+// Watch for changes in user currency and update the composable
+watchEffect(() => {
+  setDefaultCurrency(userCurrency.value);
+});
+
 const goals = page.props.goals ?? [];
 const success = page.props.success ?? '';
 const amounts = ref({});

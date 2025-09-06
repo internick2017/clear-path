@@ -21,26 +21,26 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div class="bg-green-50 p-3 sm:p-4 rounded">
               <div class="text-xs sm:text-sm text-green-600 font-medium">Ingresos</div>
-              <div class="text-lg sm:text-2xl font-bold text-green-700">${{ formatCurrency(monthlySummary.income) }}</div>
+              <div class="text-lg sm:text-2xl font-bold text-green-700">{{ formatCurrency(monthlySummary.income, userCurrency) }}</div>
             </div>
             <div class="bg-red-50 p-3 sm:p-4 rounded">
               <div class="text-xs sm:text-sm text-red-600 font-medium">Gastos Totales</div>
-              <div class="text-lg sm:text-2xl font-bold text-red-700">${{ formatCurrency(monthlySummary.expenses) }}</div>
+              <div class="text-lg sm:text-2xl font-bold text-red-700">{{ formatCurrency(monthlySummary.expenses, userCurrency) }}</div>
             </div>
             <div class="bg-orange-50 p-3 sm:p-4 rounded">
               <div class="text-xs sm:text-sm text-orange-600 font-medium">Gastos Fijos</div>
-              <div class="text-lg sm:text-xl font-bold text-orange-700">${{ formatCurrency(monthlySummary.fixed_expenses) }}</div>
+              <div class="text-lg sm:text-xl font-bold text-orange-700">{{ formatCurrency(monthlySummary.fixed_expenses, userCurrency) }}</div>
             </div>
             <div class="bg-yellow-50 p-3 sm:p-4 rounded">
               <div class="text-xs sm:text-sm text-yellow-600 font-medium">Gastos Variables</div>
-              <div class="text-lg sm:text-xl font-bold text-yellow-700">${{ formatCurrency(monthlySummary.variable_expenses) }}</div>
+              <div class="text-lg sm:text-xl font-bold text-yellow-700">{{ formatCurrency(monthlySummary.variable_expenses, userCurrency) }}</div>
             </div>
             <div class="p-3 sm:p-4 rounded" :class="monthlySummary.net >= 0 ? 'bg-blue-50' : 'bg-red-50'">
               <div class="text-xs sm:text-sm font-medium" :class="monthlySummary.net >= 0 ? 'text-blue-600' : 'text-red-600'">
                 Balance Neto
               </div>
               <div class="text-lg sm:text-2xl font-bold" :class="monthlySummary.net >= 0 ? 'text-blue-700' : 'text-red-700'">
-                ${{ formatCurrency(monthlySummary.net) }}
+                {{ formatCurrency(monthlySummary.net, userCurrency) }}
               </div>
             </div>
           </div>
@@ -117,7 +117,7 @@
                   </div>
                   <div class="text-right">
                     <span class="text-sm font-medium" :class="transaction.type === 'income' ? 'text-green-600' : 'text-red-600'">
-                      ${{ formatCurrency(transaction.amount) }}
+                      {{ formatCurrency(transaction.amount, userCurrency) }}
                     </span>
                     <div class="mt-1">
                       <span class="px-2 py-1 text-xs font-semibold rounded-full" 
@@ -179,7 +179,7 @@
                   </td>
                   <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-medium" 
                       :class="transaction.type === 'income' ? 'text-green-600' : 'text-red-600'">
-                    ${{ formatCurrency(transaction.amount) }}
+                    {{ formatCurrency(transaction.amount, userCurrency) }}
                   </td>
                   <td class="hidden lg:table-cell px-6 py-4 text-xs sm:text-sm text-gray-500 max-w-xs truncate">
                     {{ transaction.note || '-' }}
@@ -226,11 +226,22 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref, computed, watchEffect } from 'vue';
+import { useCurrency } from '@/composables/useCurrency.js';
 
 defineOptions({ layout: AppLayout });
 
 const page = usePage();
+const { formatCurrency, setDefaultCurrency } = useCurrency();
+
+// Get user's display currency
+const userCurrency = computed(() => page.props.auth.user?.display_currency || 'USD');
+
+// Watch for changes in user currency and update the composable
+watchEffect(() => {
+  setDefaultCurrency(userCurrency.value);
+});
+
 const transactions = computed(() => page.props.transactions);
 const categories = computed(() => page.props.categories);
 const monthlySummary = computed(() => page.props.monthlySummary);
@@ -265,10 +276,7 @@ const months = [
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
-// Helper functions
-function formatCurrency(amount) {
-  return Number(amount).toFixed(2);
-}
+// Helper functions - formatCurrency is now from the composable
 
 function formatDate(date) {
   return new Date(date).toLocaleDateString('es-ES');

@@ -79,18 +79,18 @@
             <div class="space-y-2 text-sm">
               <div class="flex justify-between">
                 <span class="text-gray-600">Limit:</span>
-                <span class="font-semibold">${{ formatCurrency(budget.limit) }}</span>
+                <span class="font-semibold">{{ formatCurrency(budget.limit, userCurrency) }}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-600">Gastado:</span>
                 <span class="font-semibold" :class="budget.is_exceeded ? 'text-red-600' : 'text-gray-900'">
-                  ${{ formatCurrency(budget.actual_spent) }}
+                  {{ formatCurrency(budget.actual_spent, userCurrency) }}
                 </span>
               </div>
               <div class="flex justify-between border-t pt-2">
                 <span class="text-gray-600">Restante:</span>
                 <span class="font-semibold" :class="budget.remaining < 0 ? 'text-red-600' : 'text-green-600'">
-                  ${{ formatCurrency(budget.remaining) }}
+                  {{ formatCurrency(budget.remaining, userCurrency) }}
                 </span>
               </div>
             </div>
@@ -105,7 +105,7 @@
                 </div>
                 <div class="ml-3">
                   <p class="text-sm text-red-800">
-                    Budget exceeded by ${{ formatCurrency(budget.actual_spent - budget.limit) }}!
+                    Budget exceeded by {{ formatCurrency(budget.actual_spent - budget.limit, userCurrency) }}!
                   </p>
                 </div>
               </div>
@@ -121,7 +121,7 @@
                 </div>
                 <div class="ml-3">
                   <p class="text-sm text-yellow-800">
-                    Near limit. ${{ formatCurrency(budget.remaining) }} remaining.
+                    Near limit. {{ formatCurrency(budget.remaining, userCurrency) }} remaining.
                   </p>
                 </div>
               </div>
@@ -161,13 +161,13 @@
                     {{ budget.category }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${{ formatCurrency(budget.limit) }}
+                    {{ formatCurrency(budget.limit, userCurrency) }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm" :class="budget.is_exceeded ? 'text-red-600' : 'text-gray-900'">
-                    ${{ formatCurrency(budget.actual_spent) }}
+                    {{ formatCurrency(budget.actual_spent, userCurrency) }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm" :class="budget.remaining < 0 ? 'text-red-600' : 'text-green-600'">
-                    ${{ formatCurrency(budget.remaining) }}
+                    {{ formatCurrency(budget.remaining, userCurrency) }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
@@ -190,11 +190,22 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref, computed, watchEffect } from 'vue';
+import { useCurrency } from '@/composables/useCurrency.js';
 
 defineOptions({ layout: AppLayout });
 
 const page = usePage();
+const { formatCurrency, setDefaultCurrency } = useCurrency();
+
+// Get user's display currency
+const userCurrency = computed(() => page.props.auth.user?.display_currency || 'USD');
+
+// Watch for changes in user currency and update the composable
+watchEffect(() => {
+  setDefaultCurrency(userCurrency.value);
+});
+
 const budgets = computed(() => page.props.budgets || []);
 const currentMonth = computed(() => page.props.currentMonth);
 const success = computed(() => page.props.success);
@@ -216,10 +227,7 @@ const availableMonths = computed(() => {
   return months;
 });
 
-// Helper functions
-function formatCurrency(amount) {
-  return Number(amount).toFixed(2);
-}
+// Helper functions - formatCurrency is now from the composable
 
 function formatMonth(monthString) {
   const date = new Date(monthString + '-01');

@@ -7,10 +7,15 @@
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-gray-900">Debt Management</h2>
-        <Link :href="route('debts.plan')" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
-          Ver Plan de Pago
-        </Link>
+        <h2 class="text-2xl font-bold text-gray-900">Gestión de Deudas</h2>
+        <div class="flex space-x-3">
+          <Link :href="route('debts.create')" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded">
+            + Nueva Deuda
+          </Link>
+          <Link :href="route('debts.plan')" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
+            Ver Plan de Pago
+          </Link>
+        </div>
       </div>
 
       <!-- Summary Cards -->
@@ -41,7 +46,7 @@
               </div>
               <div class="ml-4">
                 <p class="text-sm font-medium text-gray-500">Deuda Total</p>
-                <p class="text-2xl font-bold text-red-600">${{ formatCurrency(totalActiveDebt) }}</p>
+                <p class="text-2xl font-bold text-red-600">{{ formatCurrency(totalActiveDebt, userCurrency) }}</p>
               </div>
             </div>
           </div>
@@ -69,8 +74,13 @@
         <div class="p-6">
           <h3 class="text-lg font-semibold mb-4">Deudas Activas</h3>
           
-          <div v-if="activeDebts.length === 0" class="text-gray-500 text-center py-8">
-            You have no active debts. Congratulations! 🎉
+          <div v-if="activeDebts.length === 0" class="text-center py-8">
+            <div class="text-gray-500 mb-4">
+              No tienes deudas activas registradas.
+            </div>
+            <Link :href="route('debts.create')" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+              + Registrar Primera Deuda
+            </Link>
           </div>
           
           <div v-else class="overflow-x-auto">
@@ -104,13 +114,13 @@
                     <div class="text-sm text-gray-500">{{ debt.strategy }}</div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${{ formatCurrency(debt.amount) }}
+                    {{ formatCurrency(debt.amount, debt.currency) }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {{ debt.interest_rate }}%
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${{ formatCurrency(debt.minimum_payment) }}
+                    {{ formatCurrency(debt.minimum_payment, debt.currency) }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {{ formatDate(debt.due_date) }}
@@ -158,7 +168,7 @@
                     <div class="text-sm text-gray-500">{{ debt.strategy }}</div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${{ formatCurrency(debt.amount) }}
+                    {{ formatCurrency(debt.amount, debt.currency) }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {{ formatDate(debt.paid_at) }}
@@ -182,7 +192,8 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, watchEffect } from 'vue';
+import { useCurrency } from '@/composables/useCurrency.js';
 
 defineOptions({ layout: AppLayout });
 
@@ -191,15 +202,23 @@ const activeDebts = computed(() => page.props.activeDebts || []);
 const paidDebts = computed(() => page.props.paidDebts || []);
 const success = computed(() => page.props.success);
 
+// Currency formatting
+const { formatCurrency, setDefaultCurrency } = useCurrency();
+
+// Get user's display currency
+const userCurrency = computed(() => page.props.auth.user?.display_currency || 'USD');
+
+// Watch for changes in user currency and update the composable
+watchEffect(() => {
+  setDefaultCurrency(userCurrency.value);
+});
+
 // Calculate total active debt
 const totalActiveDebt = computed(() => {
   return activeDebts.value.reduce((total, debt) => total + parseFloat(debt.amount), 0);
 });
 
-// Helper functions
-function formatCurrency(amount) {
-  return Number(amount).toFixed(2);
-}
+// Helper functions removed - using useCurrency() composable
 
 function formatDate(date) {
   return new Date(date).toLocaleDateString('es-ES');

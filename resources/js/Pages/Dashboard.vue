@@ -1,14 +1,24 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { computed, onMounted, ref, onUnmounted } from 'vue';
+import { computed, onMounted, ref, onUnmounted, watchEffect } from 'vue';
 import { Chart, registerables } from 'chart.js';
+import { useCurrency } from '@/composables/useCurrency.js';
 
 Chart.register(...registerables);
 
 defineOptions({ layout: AppLayout });
 
 const page = usePage();
+const { formatCurrency, getCurrencySymbol, setDefaultCurrency } = useCurrency();
+
+// Get user's display currency
+const userCurrency = computed(() => page.props.auth.user?.display_currency || 'USD');
+
+// Watch for changes in user currency and update the composable
+watchEffect(() => {
+  setDefaultCurrency(userCurrency.value);
+});
 
 // Data from props
 const budgets = computed(() => page.props.budgets || []);
@@ -32,10 +42,7 @@ let budgetVsActualChartInstance = null;
 let goalProgressChartInstance = null;
 let fixedVsVariableChartInstance = null;
 
-// Helper functions
-function formatCurrency(amount) {
-  return Number(amount).toFixed(2);
-}
+// Helper functions - formatCurrency is now from the composable
 
 function formatDate(date) {
   return new Date(date).toLocaleDateString('en-US', {
@@ -106,7 +113,7 @@ onMounted(() => {
                     size: 11
                   },
                   callback: function(value) {
-                    return '$' + value.toLocaleString();
+                    return getCurrencySymbol(userCurrency.value) + value.toLocaleString();
                   }
                 }
               },
@@ -175,7 +182,7 @@ onMounted(() => {
                     size: 11
                   },
                   callback: function(value) {
-                    return '$' + value.toLocaleString();
+                    return getCurrencySymbol(userCurrency.value) + value.toLocaleString();
                   }
                 }
               },
@@ -234,7 +241,7 @@ onMounted(() => {
               tooltip: {
                 callbacks: {
                   label: function(context) {
-                    return context.label + ': $' + context.parsed.toLocaleString();
+                    return context.label + ': ' + getCurrencySymbol(userCurrency.value) + context.parsed.toLocaleString();
                   }
                 }
               }
@@ -293,7 +300,7 @@ onUnmounted(() => {
               </div>
               <div class="ml-3 sm:ml-4">
                 <p class="text-xs sm:text-sm font-medium text-gray-500">Monthly Income</p>
-                <p class="text-lg sm:text-2xl font-bold text-green-600">${{ formatCurrency(monthlySummary.income) }}</p>
+                <p class="text-lg sm:text-2xl font-bold text-green-600">{{ formatCurrency(monthlySummary.income, userCurrency) }}</p>
               </div>
             </div>
           </div>
@@ -309,7 +316,7 @@ onUnmounted(() => {
               </div>
               <div class="ml-3 sm:ml-4">
                 <p class="text-xs sm:text-sm font-medium text-gray-500">Monthly Expenses</p>
-                <p class="text-lg sm:text-2xl font-bold text-red-600">${{ formatCurrency(monthlySummary.expenses) }}</p>
+                <p class="text-lg sm:text-2xl font-bold text-red-600">{{ formatCurrency(monthlySummary.expenses, userCurrency) }}</p>
               </div>
             </div>
           </div>
@@ -326,7 +333,7 @@ onUnmounted(() => {
               <div class="ml-3 sm:ml-4">
                 <p class="text-xs sm:text-sm font-medium text-gray-500">Net Income</p>
                 <p class="text-lg sm:text-2xl font-bold" :class="monthlySummary.net >= 0 ? 'text-blue-600' : 'text-red-600'">
-                  ${{ formatCurrency(monthlySummary.net) }}
+                  {{ formatCurrency(monthlySummary.net, userCurrency) }}
                 </p>
               </div>
             </div>
@@ -515,7 +522,7 @@ onUnmounted(() => {
                   <div class="flex-1 min-w-0">
                     <p class="font-medium text-gray-900 text-sm sm:text-base truncate">{{ budget.category }}</p>
                     <p class="text-xs sm:text-sm text-gray-600">
-                      ${{ formatCurrency(budget.spent) }} / ${{ formatCurrency(budget.limit) }}
+                      {{ formatCurrency(budget.spent, userCurrency) }} / {{ formatCurrency(budget.limit, userCurrency) }}
                     </p>
                   </div>
                   <span class="text-xs sm:text-sm font-medium ml-2" :class="budget.is_exceeded ? 'text-red-600' : 'text-green-600'">
@@ -552,7 +559,7 @@ onUnmounted(() => {
                   <span class="text-xs text-gray-500 ml-2">{{ goal.days_remaining }} days left</span>
                 </div>
                 <p class="text-xs sm:text-sm text-gray-600 mb-2">
-                  ${{ formatCurrency(goal.current_amount) }} / ${{ formatCurrency(goal.target_amount) }}
+                  {{ formatCurrency(goal.current_amount, userCurrency) }} / {{ formatCurrency(goal.target_amount, userCurrency) }}
                 </p>
                 <div class="w-full bg-gray-200 rounded-full h-2">
                   <div class="h-2 rounded-full bg-blue-500" :style="{ width: goal.progress_percentage + '%' }"></div>
@@ -584,7 +591,7 @@ onUnmounted(() => {
                   <span class="text-xs text-gray-500 ml-2">{{ debt.interest_rate }}%</span>
                 </div>
                 <p class="text-xs sm:text-sm text-gray-600 mb-2">
-                  ${{ formatCurrency(debt.remaining_balance) }} remaining
+                  {{ formatCurrency(debt.remaining_balance, userCurrency) }} remaining
                 </p>
                 <div class="w-full bg-gray-200 rounded-full h-2">
                   <div class="h-2 rounded-full bg-yellow-500" :style="{ width: debt.payment_progress + '%' }"></div>
@@ -637,7 +644,7 @@ onUnmounted(() => {
                   </td>
                   <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-medium" 
                       :class="transaction.type === 'income' ? 'text-green-600' : 'text-red-600'">
-                    ${{ formatCurrency(transaction.amount) }}
+                    {{ formatCurrency(transaction.amount, userCurrency) }}
                   </td>
                   <td class="hidden sm:table-cell px-6 py-4 text-xs sm:text-sm text-gray-500">
                     {{ transaction.note || '-' }}

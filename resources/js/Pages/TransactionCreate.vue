@@ -150,21 +150,42 @@
               <div v-if="form.errors.is_debt_payment" class="text-red-600 text-sm mt-1">{{ form.errors.is_debt_payment }}</div>
               <div v-if="form.errors.is_debt_purchase" class="text-red-600 text-sm mt-1">{{ form.errors.is_debt_purchase }}</div>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Monto</label>
-              <div class="relative">
-                <span class="absolute left-3 top-2 text-gray-500">$</span>
-                <input 
-                  v-model.number="form.amount" 
-                  type="number" 
-                  step="0.01"
-                  min="0.01"
-                  placeholder="0.00"
-                  class="w-full border border-gray-300 rounded-md pl-8 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required 
-                />
+            <!-- Currency and Amount -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- Currency Selection -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Moneda</label>
+                <select 
+                  v-model="form.currency"
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required>
+                  <option v-for="currency in currencies" :key="currency.code" :value="currency.code">
+                    {{ currency.display }}
+                  </option>
+                </select>
+                <div v-if="form.errors.currency" class="text-red-600 text-sm mt-1">{{ form.errors.currency }}</div>
               </div>
-              <div v-if="form.errors.amount" class="text-red-600 text-sm mt-1">{{ form.errors.amount }}</div>
+
+              <!-- Amount -->
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Monto</label>
+                <div class="relative">
+                  <span class="absolute left-3 top-2 text-gray-500">{{ getCurrencySymbol(form.currency) }}</span>
+                  <input 
+                    v-model.number="form.amount" 
+                    type="number" 
+                    step="0.01"
+                    min="0.01"
+                    placeholder="0.00"
+                    class="w-full border border-gray-300 rounded-md pl-8 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required 
+                  />
+                </div>
+                <div class="text-sm text-gray-600 mt-1">
+                  Ejemplo: Para BRL usa 1.234,56 - Para USD usa 1,234.56
+                </div>
+                <div v-if="form.errors.amount" class="text-red-600 text-sm mt-1">{{ form.errors.amount }}</div>
+              </div>
             </div>
 
             <!-- Date -->
@@ -215,12 +236,17 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import { useCurrency } from '@/composables/useCurrency.js';
 
 defineOptions({ layout: AppLayout });
 
 const page = usePage();
 const categories = computed(() => page.props.categories || []);
 const debts = computed(() => page.props.debts || []);
+
+// Currency support
+const { getSupportedCurrencies, getCurrencySymbol } = useCurrency();
+const currencies = getSupportedCurrencies();
 
 // Popular categories for quick selection
 const popularCategories = {
@@ -253,6 +279,7 @@ const form = useForm({
   type: '',
   category: '',
   amount: '',
+  currency: 'BRL', // Default currency
   date: today,
   note: '',
   expense_type: '',

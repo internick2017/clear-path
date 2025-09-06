@@ -39,6 +39,11 @@
 
             <!-- User Menu (Desktop) -->
             <div class="hidden lg:flex items-center space-x-4">
+              <Link 
+                :href="route('settings.currency')" 
+                class="text-gray-700 hover:text-blue-600 text-sm font-medium transition-colors">
+                💱 Moneda
+              </Link>
               <span class="text-gray-600 text-sm">{{ $page.props.auth?.user?.name }}</span>
               <Link 
                 :href="route('logout')" 
@@ -86,6 +91,10 @@
              class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors">
             Deudas
           </a>
+          <Link :href="route('settings.currency')"
+                class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+            💱 Configurar Moneda
+          </Link>
         </div>
 
         <!-- Mobile User Menu -->

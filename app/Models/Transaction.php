@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Helpers\CurrencyHelper;
 use App\Services\BudgetService;
 use App\Services\GoalTrackingService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,7 +13,7 @@ class Transaction extends Model
     use HasFactory;
     
     protected $fillable = [
-        'user_id', 'type', 'category', 'amount', 'date', 'note', 'expense_type', 'debt_id'
+        'user_id', 'type', 'category', 'amount', 'currency', 'date', 'note', 'expense_type', 'debt_id'
     ];
 
     protected $casts = [
@@ -55,5 +56,27 @@ class Transaction extends Model
     public function debt()
     {
         return $this->belongsTo(Debt::class);
+    }
+
+    /**
+     * Get formatted amount in user's preferred currency
+     */
+    public function getFormattedAmountAttribute()
+    {
+        $userCurrency = CurrencyHelper::getUserCurrency();
+        return CurrencyHelper::formatStoredAmount($this->amount, $userCurrency);
+    }
+
+    /**
+     * Convert input amount to base currency before saving
+     */
+    public function setAmountAttribute($value)
+    {
+        // Convert from input currency to base currency for storage
+        if ($this->currency && $this->currency !== config('currencies.base', 'USD')) {
+            $this->attributes['amount'] = CurrencyHelper::convertToBaseAmount($value, $this->currency);
+        } else {
+            $this->attributes['amount'] = $value;
+        }
     }
 }

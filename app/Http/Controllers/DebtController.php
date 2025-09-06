@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\CurrencyHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Debt;
 use App\Models\DebtPayment;
@@ -19,30 +20,34 @@ class DebtController extends Controller
 
     public function index()
     {
-        $activeDebts = Auth::user()->debts()->active()->with('payments')->get()->map(function($debt) {
+        $userCurrency = CurrencyHelper::getUserCurrency();
+        
+        $activeDebts = Auth::user()->debts()->active()->with('payments')->get()->map(function($debt) use ($userCurrency) {
             return [
                 'id' => $debt->id,
                 'name' => $debt->name,
-                'amount' => $debt->amount,
+                'amount' => CurrencyHelper::convertStoredAmount($debt->amount, $userCurrency),
+                'currency' => $userCurrency,
                 'interest_rate' => $debt->interest_rate,
-                'minimum_payment' => $debt->minimum_payment,
+                'minimum_payment' => CurrencyHelper::convertStoredAmount($debt->minimum_payment, $userCurrency),
                 'due_date' => $debt->due_date,
                 'status' => $debt->status,
-                'remaining_balance' => $debt->getRemainingBalance(),
-                'total_paid' => $debt->getTotalPaidAmount(),
+                'remaining_balance' => CurrencyHelper::convertStoredAmount($debt->getRemainingBalance(), $userCurrency),
+                'total_paid' => CurrencyHelper::convertStoredAmount($debt->getTotalPaidAmount(), $userCurrency),
                 'payment_progress' => $debt->payment_progress,
                 'payments_count' => $debt->payments->count(),
             ];
         });
 
-        $paidDebts = Auth::user()->debts()->paid()->with('payments')->get()->map(function($debt) {
+        $paidDebts = Auth::user()->debts()->paid()->with('payments')->get()->map(function($debt) use ($userCurrency) {
             return [
                 'id' => $debt->id,
                 'name' => $debt->name,
-                'amount' => $debt->amount,
+                'amount' => CurrencyHelper::convertStoredAmount($debt->amount, $userCurrency),
+                'currency' => $userCurrency,
                 'paid_at' => $debt->paid_at,
-                'total_paid' => $debt->getTotalPaidAmount(),
-                'total_interest_paid' => $debt->getTotalInterestPaid(),
+                'total_paid' => CurrencyHelper::convertStoredAmount($debt->getTotalPaidAmount(), $userCurrency),
+                'total_interest_paid' => CurrencyHelper::convertStoredAmount($debt->getTotalInterestPaid(), $userCurrency),
                 'payments_count' => $debt->payments->count(),
             ];
         });
@@ -61,10 +66,52 @@ class DebtController extends Controller
 
     public function store(DebtRequest $request)
     {
-        $debt = Auth::user()->debts()->create($request->validated());
+        $validatedData = $request->validated();
+        
+        // Count provided fields for validation
+        $providedFields = 0;
+        if (!empty($validatedData['original_amount'])) $providedFields++;
+        if (!empty($validatedData['total_amount'])) $providedFields++;
+        if (!empty($validatedData['interest_rate'])) $providedFields++;
+        if (!empty($validatedData['minimum_payment'])) $providedFields++;
+        
+        // Ensure at least 3 fields are provided
+        if ($providedFields < 3) {
+            return back()->withErrors(['debt_calculation' => 'Please provide at least 3 out of 4 fields: original amount, total amount, interest rate, or monthly payment.']);
+        }
+        
+        try {
+            // Calculate missing field if needed
+            if ($providedFields < 4) {
+                $validatedData = \App\Models\Debt::calculateMissingField($validatedData);
+            }
+            
+            // Validate calculations are mathematically consistent
+            if (!\App\Models\Debt::validateDebtCalculations($validatedData)) {
+                return back()->withErrors(['debt_calculation' => 'The provided values are not mathematically consistent. Please check your inputs.']);
+            }
+            
+            // Set the current debt amount (original_amount or total_amount based on what's available)
+            if (!empty($validatedData['original_amount'])) {
+                $validatedData['amount'] = $validatedData['original_amount'];
+            } elseif (!empty($validatedData['total_amount'])) {
+                $validatedData['amount'] = $validatedData['total_amount'];
+            }
+            
+            // Add default values
+            $validatedData['status'] = 'active';
+            $validatedData['strategy'] = 'avalanche'; // Default strategy
+            
+            $debt = Auth::user()->debts()->create($validatedData);
 
-        return redirect()->route('debts.index')
-            ->with('success', 'Debt created successfully');
+            return redirect()->route('debts.index')
+                ->with('success', 'Deuda registrada exitosamente');
+                
+        } catch (\InvalidArgumentException $e) {
+            return back()->withErrors(['debt_calculation' => $e->getMessage()]);
+        } catch (\Exception $e) {
+            return back()->withErrors(['debt_calculation' => 'An error occurred while processing your debt information. Please try again.']);
+        }
     }
 
     public function show(Debt $debt)

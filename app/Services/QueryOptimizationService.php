@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\CurrencyHelper;
 use App\Models\User;
 use App\Models\Transaction;
 use App\Models\Budget;
@@ -21,6 +22,9 @@ class QueryOptimizationService
         $year = $year ?? now()->year;
 
         try {
+            // Get user's display currency - use user parameter directly
+            $userCurrency = $user->display_currency ?? config('currencies.default', 'USD');
+            
             $summary = DB::table('transactions')
                 ->selectRaw('
                     SUM(CASE WHEN type = "income" THEN amount ELSE 0 END) as total_income,
@@ -42,8 +46,9 @@ class QueryOptimizationService
                 ];
             }
 
-            $income = (float) ($summary->total_income ?? 0);
-            $expenses = (float) ($summary->total_expenses ?? 0);
+            // Convert amounts from base currency to user's display currency
+            $income = CurrencyHelper::convertStoredAmount((float) ($summary->total_income ?? 0), $userCurrency);
+            $expenses = CurrencyHelper::convertStoredAmount((float) ($summary->total_expenses ?? 0), $userCurrency);
 
             return [
                 'income' => $income,
@@ -70,6 +75,9 @@ class QueryOptimizationService
         $year = $year ?? now()->year;
 
         try {
+            // Get user's display currency - use user parameter directly
+            $userCurrency = $user->display_currency ?? config('currencies.default', 'USD');
+            
             $results = DB::table('transactions')
                 ->selectRaw('category, SUM(amount) as total_amount, COUNT(*) as transaction_count')
                 ->where('user_id', $user->id)
@@ -85,10 +93,10 @@ class QueryOptimizationService
                 return [];
             }
 
-            return $results->map(function ($item) {
+            return $results->map(function ($item) use ($userCurrency) {
                 return [
                     'category' => $item->category ?? 'Sin categoría',
-                    'total' => (float) ($item->total_amount ?? 0),
+                    'total' => CurrencyHelper::convertStoredAmount((float) ($item->total_amount ?? 0), $userCurrency),
                     'transaction_count' => (int) ($item->transaction_count ?? 0),
                 ];
             })->toArray();
@@ -132,20 +140,27 @@ class QueryOptimizationService
                 return [];
             }
 
-            return $results->map(function ($budget) {
+            // Get user's display currency - use user parameter directly
+            $userCurrency = $user->display_currency ?? config('currencies.default', 'USD');
+            
+            return $results->map(function ($budget) use ($userCurrency) {
                 $actualSpent = (float) ($budget->actual_spent ?? 0);
                 $budgetSpent = (float) ($budget->budget_spent ?? 0);
                 $spent = max($actualSpent, $budgetSpent);
                 $limit = (float) ($budget->limit ?? 0);
 
+                // Convert all amounts to user's display currency
+                $convertedLimit = CurrencyHelper::convertStoredAmount($limit, $userCurrency);
+                $convertedSpent = CurrencyHelper::convertStoredAmount($spent, $userCurrency);
+
                 return [
                     'id' => $budget->id,
                     'category' => $budget->category ?? 'Sin categoría',
-                    'limit' => $limit,
-                    'spent' => $spent,
-                    'remaining' => $limit - $spent,
-                    'percentage' => $limit > 0 ? ($spent / $limit) * 100 : 0,
-                    'is_exceeded' => $spent > $limit,
+                    'limit' => $convertedLimit,
+                    'spent' => $convertedSpent,
+                    'remaining' => $convertedLimit - $convertedSpent,
+                    'percentage' => $convertedLimit > 0 ? ($convertedSpent / $convertedLimit) * 100 : 0,
+                    'is_exceeded' => $convertedSpent > $convertedLimit,
                 ];
             })->toArray();
         } catch (\Exception $e) {
@@ -178,17 +193,24 @@ class QueryOptimizationService
                 return [];
             }
 
-            return $results->map(function ($goal) {
+            // Get user's display currency - use user parameter directly
+            $userCurrency = $user->display_currency ?? config('currencies.default', 'USD');
+            
+            return $results->map(function ($goal) use ($userCurrency) {
                 $targetAmount = (float) ($goal->target_amount ?? 0);
                 $currentAmount = (float) ($goal->current_amount ?? 0);
+
+                // Convert amounts to user's display currency
+                $convertedTarget = CurrencyHelper::convertStoredAmount($targetAmount, $userCurrency);
+                $convertedCurrent = CurrencyHelper::convertStoredAmount($currentAmount, $userCurrency);
 
                 return [
                     'id' => $goal->id,
                     'title' => $goal->title ?? 'Sin título',
-                    'target_amount' => $targetAmount,
-                    'current_amount' => $currentAmount,
+                    'target_amount' => $convertedTarget,
+                    'current_amount' => $convertedCurrent,
                     'deadline' => $goal->deadline,
-                    'progress_percentage' => $targetAmount > 0 ? ($currentAmount / $targetAmount) * 100 : 0,
+                    'progress_percentage' => $convertedTarget > 0 ? ($convertedCurrent / $convertedTarget) * 100 : 0,
                     'days_remaining' => (int) ($goal->days_remaining ?? 0),
                 ];
             })->toArray();
@@ -225,20 +247,28 @@ class QueryOptimizationService
                 return [];
             }
 
-            return $results->map(function ($debt) {
+            // Get user's display currency - use user parameter directly
+            $userCurrency = $user->display_currency ?? config('currencies.default', 'USD');
+            
+            return $results->map(function ($debt) use ($userCurrency) {
                 $originalAmount = (float) ($debt->amount ?? 0);
                 $totalPaid = (float) ($debt->total_paid ?? 0);
                 $remainingBalance = $originalAmount - $totalPaid;
 
+                // Convert amounts to user's display currency
+                $convertedBalance = CurrencyHelper::convertStoredAmount($originalAmount, $userCurrency);
+                $convertedRemaining = CurrencyHelper::convertStoredAmount(max(0, $remainingBalance), $userCurrency);
+                $convertedMinPayment = CurrencyHelper::convertStoredAmount((float) ($debt->minimum_payment ?? 0), $userCurrency);
+
                 return [
                     'id' => $debt->id,
                     'name' => $debt->name ?? 'Sin nombre',
-                    'balance' => $originalAmount,
-                    'remaining_balance' => max(0, $remainingBalance),
-                    'minimum_payment' => (float) ($debt->minimum_payment ?? 0),
+                    'balance' => $convertedBalance,
+                    'remaining_balance' => $convertedRemaining,
+                    'minimum_payment' => $convertedMinPayment,
                     'due_date' => $debt->due_date,
                     'days_until_due' => (int) ($debt->days_until_due ?? 0),
-                    'total_paid' => $totalPaid,
+                    'total_paid' => CurrencyHelper::convertStoredAmount($totalPaid, $userCurrency),
                     'payment_progress' => $originalAmount > 0 ? ($totalPaid / $originalAmount) * 100 : 0,
                 ];
             })->toArray();
@@ -264,12 +294,15 @@ class QueryOptimizationService
                 return [];
             }
 
-            return $results->map(function ($transaction) {
+            // Get user's display currency - use user parameter directly
+            $userCurrency = $user->display_currency ?? config('currencies.default', 'USD');
+            
+            return $results->map(function ($transaction) use ($userCurrency) {
                 return [
                     'id' => $transaction->id,
                     'type' => $transaction->type ?? 'expense',
                     'category' => $transaction->category ?? 'Sin categoría',
-                    'amount' => (float) ($transaction->amount ?? 0),
+                    'amount' => CurrencyHelper::convertStoredAmount((float) ($transaction->amount ?? 0), $userCurrency),
                     'date' => $transaction->date,
                     'note' => $transaction->note ?? '',
                 ];

@@ -13,6 +13,7 @@ class DebtPayment extends Model
         'debt_id',
         'user_id',
         'amount',
+        'currency',
         'principal_amount',
         'interest_amount',
         'payment_date',

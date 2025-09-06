@@ -24,9 +24,13 @@ class DebtRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'amount' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
-            'interest_rate' => ['required', 'numeric', 'min:0', 'max:100'],
-            'minimum_payment' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
+            'amount' => ['nullable', 'numeric', 'min:0.01', 'max:999999.99'],
+            'original_amount' => ['nullable', 'numeric', 'min:0.01', 'max:999999.99'],
+            'total_amount' => ['nullable', 'numeric', 'min:0.01', 'max:999999.99'],
+            'amount_paid' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
+            'currency' => ['required', 'string', 'in:' . implode(',', array_keys(config('currencies.supported')))],
+            'interest_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'minimum_payment' => ['nullable', 'numeric', 'min:0.01', 'max:999999.99'],
             'due_date' => ['required', 'date', 'after_or_equal:today'],
             'note' => ['nullable', 'string', 'max:1000'],
         ];
@@ -56,6 +60,8 @@ class DebtRequest extends FormRequest
             'due_date.date' => 'The due date must be a valid date.',
             'due_date.after_or_equal' => 'The due date must be today or a future date.',
             'note.max' => 'The note may not be greater than 1000 characters.',
+            'currency.required' => 'The currency is required.',
+            'currency.in' => 'The selected currency is not supported.',
         ];
     }
 
@@ -71,6 +77,7 @@ class DebtRequest extends FormRequest
             'minimum_payment' => 'minimum payment',
             'due_date' => 'due date',
             'note' => 'note',
+            'currency' => 'currency',
         ];
     }
 
