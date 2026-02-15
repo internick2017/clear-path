@@ -3,7 +3,7 @@
     <div v-if="success" class="mb-6 p-4 bg-green-100 text-green-800 rounded font-semibold text-center">
       {{ success }}
     </div>
-    
+
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="flex justify-between items-center mb-6">
@@ -73,7 +73,7 @@
       <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
         <div class="p-6">
           <h3 class="text-lg font-semibold mb-4">Deudas Activas</h3>
-          
+
           <div v-if="activeDebts.length === 0" class="text-center py-8">
             <div class="text-gray-500 mb-4">
               No tienes deudas activas registradas.
@@ -82,7 +82,7 @@
               + Registrar Primera Deuda
             </Link>
           </div>
-          
+
           <div v-else class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
@@ -126,10 +126,16 @@
                     {{ formatDate(debt.due_date) }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button @click="markAsPaid(debt)" 
-                            class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
-                      Marcar como Pagada
-                    </button>
+                    <div class="flex space-x-2">
+                      <Link :href="route('debts.edit', debt.id)"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                        Editar
+                      </Link>
+                      <button @click="markAsPaid(debt)"
+                              class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
+                        Marcar como Pagada
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -142,7 +148,7 @@
       <div v-if="paidDebts.length > 0" class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
         <div class="p-6">
           <h3 class="text-lg font-semibold mb-4">Deudas Pagadas</h3>
-          
+
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
@@ -174,10 +180,16 @@
                     {{ formatDate(debt.paid_at) }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button @click="markAsActive(debt)" 
-                            class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm">
-                      Marcar como Activa
-                    </button>
+                    <div class="flex space-x-2">
+                      <Link :href="route('debts.edit', debt.id)"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                        Editar
+                      </Link>
+                      <button @click="markAsActive(debt)"
+                              class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm">
+                        Marcar como Activa
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -241,4 +253,4 @@ function markAsActive(debt) {
     });
   }
 }
-</script> 
+</script>

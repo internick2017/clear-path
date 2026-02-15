@@ -1,61 +1,217 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Clear Path
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A comprehensive personal finance management application built with Laravel 12, Inertia.js, and Vue 3.
 
-## About Laravel
+## Overview
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Clear Path helps users take control of their financial life by providing tools to track transactions, manage budgets, set savings goals, and plan debt payoff strategies.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Features
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Transaction Management
+- Track income and expenses with categorization
+- Link transactions to debts for automatic payment tracking
+- Multi-currency support with automatic conversion
+- Category suggestions based on transaction history
 
-## Learning Laravel
+### Budget Management
+- Create budgets by category with spending limits
+- Real-time tracking of budget consumption
+- Notifications when approaching or exceeding limits
+- Monthly budget performance analysis
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Savings Goals
+- Set financial goals with target amounts and deadlines
+- Track progress with deposits
+- Visual progress indicators
+- Goal completion notifications
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### Debt Management
+- Track multiple debts with balances, interest rates, and minimum payments
+- Payment history and progress tracking
+- Smart payoff strategies:
+  - **Avalanche Method**: Pay off highest interest rate debts first
+  - **Snowball Method**: Pay off smallest balances first
+- Debt payoff plan visualization
+- Payment reminders and notifications
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Multi-Currency Support
+- Support for multiple currencies (USD, EUR, GBP, etc.)
+- User-selectable display currency
+- Automatic currency conversion for transactions
+- Real-time exchange rate updates
 
-## Laravel Sponsors
+### Dashboard
+- Financial overview at a glance
+- Budget status summaries
+- Goal progress tracking
+- Recent transactions
+- Debt overview with payoff projections
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Notifications
+- Budget exceeded alerts
+- Debt payment reminders
+- Goal achievement notifications
+- Scheduled reminders
 
-### Premium Partners
+### Audit Logging
+- Track all financial data changes
+- Maintain accountability and transparency
+- Historical record of modifications
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Tech Stack
 
-## Contributing
+- **Backend**: Laravel 12 (PHP 8.2+)
+- **Frontend**: Vue 3 with Composition API
+- **Bridge**: Inertia.js
+- **Styling**: Tailwind CSS
+- **Charts**: Chart.js
+- **Icons**: Heroicons
+- **Authentication**: Laravel Breeze
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Requirements
 
-## Code of Conduct
+- PHP 8.2 or higher
+- Composer
+- Node.js 18+ and npm/yarn
+- MySQL, PostgreSQL, or SQLite
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Installation
 
-## Security Vulnerabilities
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd clear-path
+   ```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+2. **Install PHP dependencies**
+   ```bash
+   composer install
+   ```
+
+3. **Install Node.js dependencies**
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
+
+4. **Configure environment**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+
+5. **Configure database**
+
+   Update `.env` with your database credentials:
+   ```env
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=clear_path
+   DB_USERNAME=your_username
+   DB_PASSWORD=your_password
+   ```
+
+6. **Run migrations**
+   ```bash
+   php artisan migrate
+   ```
+
+7. **Seed currency rates (optional)**
+   ```bash
+   php artisan db:seed --class=CurrencyRatesSeeder
+   ```
+
+8. **Build assets**
+   ```bash
+   npm run build
+   # or for development
+   npm run dev
+   ```
+
+9. **Start the server**
+   ```bash
+   php artisan serve
+   ```
+
+## Development
+
+Run all services concurrently for development:
+
+```bash
+composer dev
+```
+
+This starts:
+- Laravel development server
+- Queue worker
+- Laravel Pail (log viewer)
+- Vite dev server
+
+### Running Tests
+
+```bash
+composer test
+```
+
+## Project Structure
+
+```
+app/
+├── Console/Commands/      # Artisan commands for scheduled tasks
+├── Helpers/               # Currency and utility helpers
+├── Http/
+│   ├── Controllers/       # Application controllers
+│   ├── Middleware/        # Security headers and middleware
+│   └── Requests/          # Form request validation
+├── Mail/                  # Email templates
+├── Models/                # Eloquent models
+├── Notifications/         # Notification classes
+└── Services/              # Business logic services
+
+resources/js/
+├── Components/            # Reusable Vue components
+├── Layouts/               # Page layouts
+├── Pages/                 # Inertia page components
+└── composables/           # Vue composables
+
+database/
+├── factories/             # Model factories
+├── migrations/            # Database migrations
+└── seeders/               # Database seeders
+```
+
+## Key Services
+
+| Service | Description |
+|---------|-------------|
+| `BudgetService` | Budget calculations and tracking |
+| `DebtPayoffService` | Debt payoff strategies and projections |
+| `CurrencyConversionService` | Multi-currency conversion |
+| `NotificationService` | Notification management |
+| `AuditService` | Activity logging |
+| `CategorySuggestionService` | Smart category suggestions |
+| `ReminderService` | Scheduled reminders |
+
+## Scheduled Commands
+
+| Command | Schedule | Description |
+|---------|----------|-------------|
+| `budget:check-exceeded` | Daily | Send budget exceeded notifications |
+| `debts:payment-reminders` | Daily | Send debt payment reminders |
+| `reminders:process` | Hourly | Process scheduled reminders |
+| `notifications:send-scheduled` | Hourly | Send scheduled notifications |
+
+## Security Features
+
+- CSRF protection
+- Rate limiting on sensitive operations
+- Security headers middleware
+- Input validation and sanitization
+- Audit logging for accountability
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is proprietary software. All rights reserved.

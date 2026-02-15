@@ -10,7 +10,7 @@ use Carbon\Carbon;
 class Debt extends Model
 {
     use HasFactory;
-    
+
     protected $fillable = [
         'user_id',
         'name',
@@ -187,7 +187,7 @@ class Debt extends Model
         if ($this->amount <= 0) {
             return 100;
         }
-        
+
         return min(100, ($this->getTotalPaidAmount() / $this->amount) * 100);
     }
 
@@ -250,7 +250,7 @@ class Debt extends Model
 
         // Count non-null fields
         $providedFields = array_filter($fields, fn($value) => $value !== null && $value !== '');
-        
+
         if (count($providedFields) < 3) {
             throw new \InvalidArgumentException('At least 3 of 4 fields are required: original_amount, total_amount, interest_rate, minimum_payment');
         }
@@ -259,16 +259,16 @@ class Debt extends Model
         if ($fields['original_amount'] === null) {
             // Calculate original amount from total amount and interest
             if ($fields['total_amount'] && $fields['interest_rate']) {
-                // Simplified calculation: assuming total_amount includes all interest
-                $totalInterest = $fields['total_amount'] * ($fields['interest_rate'] / 100);
-                $fields['original_amount'] = $fields['total_amount'] - $totalInterest;
+                // CORRECT calculation: total_amount = original_amount + (original_amount * interest_rate)
+                // So: original_amount = total_amount / (1 + interest_rate/100)
+                $fields['original_amount'] = $fields['total_amount'] / (1 + ($fields['interest_rate'] / 100));
             }
         }
 
         if ($fields['total_amount'] === null) {
             // Calculate total amount from original amount and interest
             if ($fields['original_amount'] && $fields['interest_rate']) {
-                // Simplified calculation for demonstration
+                // CORRECT calculation: total_amount = original_amount + (original_amount * interest_rate)
                 $totalInterest = $fields['original_amount'] * ($fields['interest_rate'] / 100);
                 $fields['total_amount'] = $fields['original_amount'] + $totalInterest;
             }

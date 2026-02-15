@@ -24,13 +24,13 @@ class SecurityHeaders
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
 
-        // Content Security Policy
+        // Content Security Policy - Development friendly
         $csp = "default-src 'self'; " .
-               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " .
-               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " .
-               "font-src 'self' https://fonts.gstatic.com; " .
+               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net http://localhost:* http://127.0.0.1:* http://[::1]:*; " .
+               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net; " .
+               "font-src 'self' https://fonts.gstatic.com https://fonts.bunny.net; " .
                "img-src 'self' data: https:; " .
-               "connect-src 'self' https://api.example.com; " .
+               "connect-src 'self' https://api.example.com http://localhost:* http://127.0.0.1:* http://[::1]:* ws://localhost:* ws://127.0.0.1:* ws://[::1]:*; " .
                "frame-ancestors 'none';";
 
         $response->headers->set('Content-Security-Policy', $csp);

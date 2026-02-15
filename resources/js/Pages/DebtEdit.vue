@@ -4,7 +4,7 @@
       <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
         <div class="p-6">
           <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold text-gray-900">Nueva Deuda</h2>
+            <h2 class="text-2xl font-bold text-gray-900">Editar Deuda</h2>
             <Link :href="route('debts.index')" class="text-gray-600 hover:text-gray-900">
               ← Volver a Deudas
             </Link>
@@ -48,138 +48,129 @@
                 <strong>Campos disponibles:</strong> Capital Original | Monto Total | Tasa de Interés | Pago Mensual
               </div>
               <!-- Format Instructions -->
-              <div class="bg-blue-50 border border-blue-200 rounded p-3 mt-3">
-                <h4 class="text-sm font-semibold text-blue-800 mb-2">🇧🇷 Formato Brasileiro:</h4>
-                <div class="text-xs text-blue-700 space-y-1">
-                  <div><strong>Valores monetários:</strong> Use vírgula (,) para decimais</div>
-                  <div><strong>Exemplos:</strong> R$ 1.500,75 | R$ 2.000,00 | R$ 500,50</div>
-                  <div><strong>Taxa de juros:</strong> Use vírgula (,) para decimais</div>
-                  <div><strong>Exemplos:</strong> 18,5% | 12,75% | 24,0%</div>
-                </div>
+              <div class="text-xs text-yellow-600 bg-yellow-100 p-2 rounded border">
+                <strong>💡 Formato brasileiro:</strong> Usa comas para decimales (ej: 1.500,75) y puntos para miles (ej: 1.500,75)
               </div>
             </div>
 
-            <!-- Flexible Fields Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- 1. Original Amount (Capital) -->
+            <!-- 1. Original Amount -->
+            <div class="relative">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                💰 Capital Original
+                <span class="text-xs text-gray-500">(Opcional)</span>
+              </label>
               <div class="relative">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  💰 Capital Original
-                  <span class="text-xs text-gray-500">(Opcional)</span>
-                </label>
-                <div class="relative">
-                  <span class="absolute left-3 top-2 text-gray-500">{{ getCurrencySymbol(form.currency) }}</span>
-                  <input
-                    v-model="form.original_amount"
-                    type="text"
-                    placeholder="1.500,75"
-                    class="w-full border rounded-md pl-8 pr-10 py-2 focus:ring-2 focus:ring-blue-500"
-                    :class="form.original_amount ? 'border-green-300 bg-green-50' : 'border-gray-300'"
-                  />
-                  <button
-                    v-if="form.original_amount"
-                    type="button"
-                    @click="clearField('original_amount')"
-                    class="absolute right-2 top-2 text-gray-400 hover:text-red-500 text-sm"
-                    title="Limpiar campo"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div class="text-xs text-gray-600 mt-1">Monto que pediste prestado inicialmente</div>
-                <div v-if="form.errors.original_amount" class="text-red-600 text-sm mt-1">{{ form.errors.original_amount }}</div>
+                <span class="absolute left-3 top-2 text-gray-500">{{ getCurrencySymbol(form.currency) }}</span>
+                <input
+                  v-model="form.original_amount"
+                  type="text"
+                  placeholder="1.500,75"
+                  class="w-full border rounded-md pl-8 pr-10 py-2 focus:ring-2 focus:ring-blue-500"
+                  :class="form.original_amount ? 'border-green-300 bg-green-50' : 'border-gray-300'"
+                />
+                <button
+                  v-if="form.original_amount"
+                  type="button"
+                  @click="clearField('original_amount')"
+                  class="absolute right-2 top-2 text-gray-400 hover:text-red-500 text-sm"
+                  title="Limpiar campo"
+                >
+                  ✕
+                </button>
               </div>
+              <div class="text-xs text-gray-600 mt-1">Monto que pediste prestado inicialmente</div>
+              <div v-if="form.errors.original_amount" class="text-red-600 text-sm mt-1">{{ form.errors.original_amount }}</div>
+            </div>
 
-              <!-- 2. Total Amount -->
+            <!-- 2. Total Amount -->
+            <div class="relative">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                📈 Monto Total a Pagar
+                <span class="text-xs text-gray-500">(Opcional)</span>
+              </label>
               <div class="relative">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  📈 Monto Total a Pagar
-                  <span class="text-xs text-gray-500">(Opcional)</span>
-                </label>
-                <div class="relative">
-                  <span class="absolute left-3 top-2 text-gray-500">{{ getCurrencySymbol(form.currency) }}</span>
-                  <input
-                    v-model="form.total_amount"
-                    type="text"
-                    placeholder="2.000,00"
-                    class="w-full border rounded-md pl-8 pr-10 py-2 focus:ring-2 focus:ring-blue-500"
-                    :class="form.total_amount ? 'border-green-300 bg-green-50' : 'border-gray-300'"
-                  />
-                  <button
-                    v-if="form.total_amount"
-                    type="button"
-                    @click="clearField('total_amount')"
-                    class="absolute right-2 top-2 text-gray-400 hover:text-red-500 text-sm"
-                    title="Limpiar campo"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div class="text-xs text-gray-600 mt-1">Total final con intereses incluidos</div>
-                <div v-if="form.errors.total_amount" class="text-red-600 text-sm mt-1">{{ form.errors.total_amount }}</div>
+                <span class="absolute left-3 top-2 text-gray-500">{{ getCurrencySymbol(form.currency) }}</span>
+                <input
+                  v-model="form.total_amount"
+                  type="text"
+                  placeholder="4.536,00"
+                  class="w-full border rounded-md pl-8 pr-10 py-2 focus:ring-2 focus:ring-blue-500"
+                  :class="form.total_amount ? 'border-green-300 bg-green-50' : 'border-gray-300'"
+                />
+                <button
+                  v-if="form.total_amount"
+                  type="button"
+                  @click="clearField('total_amount')"
+                  class="absolute right-2 top-2 text-gray-400 hover:text-red-500 text-sm"
+                  title="Limpiar campo"
+                >
+                  ✕
+                </button>
               </div>
+              <div class="text-xs text-gray-600 mt-1">Total final con intereses incluidos</div>
+              <div v-if="form.errors.total_amount" class="text-red-600 text-sm mt-1">{{ form.errors.total_amount }}</div>
+            </div>
 
-              <!-- 3. Interest Rate -->
+            <!-- 3. Interest Rate -->
+            <div class="relative">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                📊 Tasa de Interés
+                <span class="text-xs text-gray-500">(Opcional)</span>
+              </label>
               <div class="relative">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  📊 Tasa de Interés
-                  <span class="text-xs text-gray-500">(Opcional)</span>
-                </label>
-                <div class="relative">
-                  <input
-                    v-model="form.interest_rate"
-                    type="text"
-                    placeholder="18,5"
-                    class="w-full border rounded-md pr-16 pl-3 py-2 focus:ring-2 focus:ring-blue-500"
-                    :class="form.interest_rate ? 'border-green-300 bg-green-50' : 'border-gray-300'"
-                  />
-                  <span class="absolute right-8 top-2 text-gray-500">% anual</span>
-                  <button
-                    v-if="form.interest_rate"
-                    type="button"
-                    @click="clearField('interest_rate')"
-                    class="absolute right-2 top-2 text-gray-400 hover:text-red-500 text-sm"
-                    title="Limpiar campo"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div class="text-xs text-gray-600 mt-1">Exemplo: 18,5 para 18,5% anual</div>
-                <div v-if="form.errors.interest_rate" class="text-red-600 text-sm mt-1">{{ form.errors.interest_rate }}</div>
+                <input
+                  v-model="form.interest_rate"
+                  type="text"
+                  placeholder="73,66"
+                  class="w-full border rounded-md pl-3 pr-10 py-2 focus:ring-2 focus:ring-blue-500"
+                  :class="form.interest_rate ? 'border-green-300 bg-green-50' : 'border-gray-300'"
+                />
+                <span class="absolute right-8 top-2 text-gray-500">% anual</span>
+                <button
+                  v-if="form.interest_rate"
+                  type="button"
+                  @click="clearField('interest_rate')"
+                  class="absolute right-2 top-2 text-gray-400 hover:text-red-500 text-sm"
+                  title="Limpiar campo"
+                >
+                  ✕
+                </button>
               </div>
+              <div class="text-xs text-gray-600 mt-1">Exemplo: 18,5 para 18,5% anual</div>
+              <div v-if="form.errors.interest_rate" class="text-red-600 text-sm mt-1">{{ form.errors.interest_rate }}</div>
+            </div>
 
-              <!-- 4. Monthly Payment -->
+            <!-- 4. Minimum Payment -->
+            <div class="relative">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                💳 Pago Mensual
+                <span class="text-xs text-gray-500">(Opcional)</span>
+              </label>
               <div class="relative">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  💳 Pago Mensual
-                  <span class="text-xs text-gray-500">(Opcional)</span>
-                </label>
-                <div class="relative">
-                  <span class="absolute left-3 top-2 text-gray-500">{{ getCurrencySymbol(form.currency) }}</span>
-                  <input
-                    v-model="form.minimum_payment"
-                    type="text"
-                    placeholder="500,00"
-                    class="w-full border rounded-md pl-8 pr-10 py-2 focus:ring-2 focus:ring-blue-500"
-                    :class="form.minimum_payment ? 'border-green-300 bg-green-50' : 'border-gray-300'"
-                  />
-                  <button
-                    v-if="form.minimum_payment"
-                    type="button"
-                    @click="clearField('minimum_payment')"
-                    class="absolute right-2 top-2 text-gray-400 hover:text-red-500 text-sm"
-                    title="Limpiar campo"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div class="text-xs text-gray-600 mt-1">Pago mínimo o fijo mensual</div>
-                <div v-if="form.errors.minimum_payment" class="text-red-600 text-sm mt-1">{{ form.errors.minimum_payment }}</div>
+                <span class="absolute left-3 top-2 text-gray-500">{{ getCurrencySymbol(form.currency) }}</span>
+                <input
+                  v-model="form.minimum_payment"
+                  type="text"
+                  placeholder="252,00"
+                  class="w-full border rounded-md pl-8 pr-10 py-2 focus:ring-2 focus:ring-blue-500"
+                  :class="form.minimum_payment ? 'border-green-300 bg-green-50' : 'border-gray-300'"
+                />
+                <button
+                  v-if="form.minimum_payment"
+                  type="button"
+                  @click="clearField('minimum_payment')"
+                  class="absolute right-2 top-2 text-gray-400 hover:text-red-500 text-sm"
+                  title="Limpiar campo"
+                >
+                  ✕
+                </button>
               </div>
+              <div class="text-xs text-gray-600 mt-1">Pago mínimo o fijo mensual</div>
+              <div v-if="form.errors.minimum_payment" class="text-red-600 text-sm mt-1">{{ form.errors.minimum_payment }}</div>
             </div>
 
             <!-- Calculate Button -->
-            <div class="flex justify-center mt-6">
+            <div class="text-center">
               <button
                 type="button"
                 @click="calculateMissingField"
@@ -222,7 +213,6 @@
               </div>
             </div>
 
-
             <!-- Amount Already Paid -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -244,7 +234,6 @@
               <div v-if="form.errors.amount_paid" class="text-red-600 text-sm mt-1">{{ form.errors.amount_paid }}</div>
             </div>
 
-
             <!-- Due Date -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Vencimiento</label>
@@ -265,26 +254,10 @@
               <textarea
                 v-model="form.note"
                 rows="3"
-                placeholder="Detalles adicionales sobre esta deuda..."
+                placeholder="Información adicional sobre esta deuda..."
                 class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               ></textarea>
               <div v-if="form.errors.note" class="text-red-600 text-sm mt-1">{{ form.errors.note }}</div>
-            </div>
-
-            <!-- Examples and Tips -->
-            <div class="bg-blue-50 p-4 rounded-md">
-              <h4 class="text-sm font-medium text-blue-900 mb-2">💡 Exemplos de Uso (Formato Brasileiro):</h4>
-              <div class="text-sm text-blue-700 space-y-2">
-                <div><strong>Cenário A:</strong> Capital (R$ 10.000,00) + Taxa (18,5%) + Pago (R$ 500,00) → Sistema calcula Total</div>
-                <div><strong>Cenário B:</strong> Total (R$ 15.000,00) + Pago (R$ 600,00) + Taxa (20,0%) → Sistema calcula Capital</div>
-                <div><strong>Cenário C:</strong> Total + Capital + Pago → Sistema calcula a Taxa de Juros</div>
-              </div>
-              <div class="mt-3 p-2 bg-green-100 rounded text-xs text-green-800">
-                <strong>✅ Dica:</strong> Use vírgula (,) para decimais em valores monetários e taxas. Ex: 1.500,75 ou 18,5%
-              </div>
-              <div class="mt-2 p-2 bg-yellow-100 rounded text-xs text-yellow-800">
-                <strong>⚠️ Atenção:</strong> Taxas de juros normais no Brasil: 12% a 30% ao ano. Valores muito altos podem indicar erro de digitação.
-              </div>
             </div>
 
             <!-- Submit Button -->
@@ -296,8 +269,8 @@
               <button
                 type="submit"
                 :disabled="form.processing"
-                class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded disabled:opacity-50">
-                {{ form.processing ? 'Creando...' : 'Registrar Deuda' }}
+                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded disabled:opacity-50">
+                {{ form.processing ? 'Actualizando...' : 'Actualizar Deuda' }}
               </button>
             </div>
           </form>
@@ -309,11 +282,14 @@
 
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { useCurrency } from '@/composables/useCurrency.js';
 import { computed, ref } from 'vue';
 
 defineOptions({ layout: AppLayout });
+
+const page = usePage();
+const debt = computed(() => page.props.debt);
 
 // Set default date to today
 const today = new Date().toISOString().split('T')[0];
@@ -323,16 +299,16 @@ const { getSupportedCurrencies, getCurrencySymbol } = useCurrency();
 const currencies = getSupportedCurrencies();
 
 const form = useForm({
-  name: '',
-  original_amount: '',
-  total_amount: '',
-  amount: '', // This field will be set based on total_amount or original_amount
-  amount_paid: 0,
-  currency: 'BRL', // Default to Brazilian Real
-  interest_rate: '',
-  minimum_payment: '',
-  due_date: '',
-  note: ''
+  name: debt.value.name,
+  original_amount: debt.value.original_amount || '',
+  total_amount: debt.value.total_amount || '',
+  amount: debt.value.amount || '', // This field will be set based on total_amount or original_amount
+  amount_paid: debt.value.amount_paid || 0,
+  currency: debt.value.currency || 'BRL', // Default to Brazilian Real
+  interest_rate: debt.value.interest_rate || '',
+  minimum_payment: debt.value.minimum_payment || '',
+  due_date: debt.value.due_date ? new Date(debt.value.due_date).toISOString().split('T')[0] : today,
+  note: debt.value.note || ''
 });
 
 // Calculation state
@@ -400,35 +376,39 @@ function calculateMissingField() {
   }
 
   else if (!form.interest_rate && originalAmount > 0 && totalAmount > 0) {
-    // Calculate interest rate: rate = ((total/original) - 1) * 100
-    const calculated = ((totalAmount / originalAmount) - 1) * 100;
-
-    // Validate reasonable interest rate (0% to 200%)
-    if (calculated < 0) {
-      calculatedField.value = `⚠️ Error: El monto total debe ser mayor que el capital original`;
-      return;
-    } else if (calculated > 200) {
-      calculatedField.value = `⚠️ Advertencia: Tasa muy alta (${calculated.toFixed(2)}%). Verifica los valores.`;
-    } else {
-      calculatedField.value = `Tasa de Interés: ${calculated.toFixed(2)}% anual`;
-    }
+    // Calculate interest rate: rate = ((total - original) / original) * 100
+    const calculated = ((totalAmount - originalAmount) / originalAmount) * 100;
     form.interest_rate = calculated.toFixed(2);
+    calculatedField.value = `Tasa de Interés: ${form.interest_rate}% anual`;
   }
 
-  else if (!form.minimum_payment && totalAmount > 0) {
-    // Estimate minimum payment (24 months default)
-    const calculated = totalAmount / 24;
+  else if (!form.minimum_payment && originalAmount > 0 && totalAmount > 0) {
+    // Calculate minimum payment (simplified: total / 12 months)
+    const calculated = totalAmount / 12;
     form.minimum_payment = calculated.toFixed(2);
-    calculatedField.value = `Pago Mensual Estimado: ${getCurrencySymbol(form.currency)}${form.minimum_payment}`;
+    calculatedField.value = `Pago Mensual: ${getCurrencySymbol(form.currency)}${form.minimum_payment}`;
   }
 
-  // Additional validation for all fields
-  if (originalAmount > 0 && totalAmount > 0 && totalAmount < originalAmount) {
-    calculatedField.value = `⚠️ Error: El monto total (${totalAmount}) debe ser mayor que el capital original (${originalAmount})`;
+  else {
+    // All fields are provided, validate consistency
+    const calculatedTotal = originalAmount * (1 + (interestRate / 100));
+    const difference = Math.abs(calculatedTotal - totalAmount);
+    const tolerance = 0.01; // 1 cent tolerance
+
+    if (difference > tolerance) {
+      calculatedField.value = `⚠️ Advertencia: Los valores no son consistentes. Total calculado: ${getCurrencySymbol(form.currency)}${calculatedTotal.toFixed(2)}, pero ingresaste: ${getCurrencySymbol(form.currency)}${totalAmount.toFixed(2)}`;
+    } else {
+      calculatedField.value = `✅ Todos los campos están completos y son consistentes`;
+    }
   }
 
-  if (interestRate > 100) {
-    calculatedField.value = `⚠️ Advertencia: Tasa de interés muy alta (${interestRate}%). Verifica si es correcta.`;
+  // Additional validation warnings
+  if (interestRate > 200) {
+    calculatedField.value += `\n⚠️ Advertencia: Tasa de interés muy alta (${interestRate}%). Considera refinanciar.`;
+  }
+
+  if (totalAmount < originalAmount) {
+    calculatedField.value += `\n⚠️ Error: El monto total no puede ser menor que el capital original.`;
   }
 }
 
@@ -466,6 +446,6 @@ function submit() {
     form.amount = form.original_amount;
   }
 
-  form.post(route('debts.store'));
+  form.put(route('debts.update', debt.value.id));
 }
 </script>

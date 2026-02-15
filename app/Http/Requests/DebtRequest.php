@@ -29,7 +29,7 @@ class DebtRequest extends FormRequest
             'total_amount' => ['nullable', 'numeric', 'min:0.01', 'max:999999.99'],
             'amount_paid' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'currency' => ['required', 'string', 'in:' . implode(',', array_keys(config('currencies.supported')))],
-            'interest_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'interest_rate' => ['nullable', 'numeric', 'min:0', 'max:1000'],
             'minimum_payment' => ['nullable', 'numeric', 'min:0.01', 'max:999999.99'],
             'due_date' => ['required', 'date', 'after_or_equal:today'],
             'note' => ['nullable', 'string', 'max:1000'],
@@ -51,7 +51,7 @@ class DebtRequest extends FormRequest
             'interest_rate.required' => 'The interest rate is required.',
             'interest_rate.numeric' => 'The interest rate must be a number.',
             'interest_rate.min' => 'The interest rate must be at least 0%.',
-            'interest_rate.max' => 'The interest rate may not be greater than 100%.',
+            'interest_rate.max' => 'The interest rate may not be greater than 1000%.',
             'minimum_payment.required' => 'The minimum payment is required.',
             'minimum_payment.numeric' => 'The minimum payment must be a number.',
             'minimum_payment.min' => 'The minimum payment must be at least $0.01.',
@@ -89,15 +89,15 @@ class DebtRequest extends FormRequest
         if ($this->has('amount') && is_numeric($this->amount)) {
             $this->merge(['amount' => (float) $this->amount]);
         }
-        
+
         if ($this->has('interest_rate') && is_numeric($this->interest_rate)) {
             $this->merge(['interest_rate' => (float) $this->interest_rate]);
         }
-        
+
         if ($this->has('minimum_payment') && is_numeric($this->minimum_payment)) {
             $this->merge(['minimum_payment' => (float) $this->minimum_payment]);
         }
-        
+
         if ($this->has('due_date')) {
             try {
                 $this->merge(['due_date' => \Carbon\Carbon::parse($this->due_date)->format('Y-m-d')]);
@@ -106,4 +106,4 @@ class DebtRequest extends FormRequest
             }
         }
     }
-} 
+}

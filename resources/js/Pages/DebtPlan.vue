@@ -13,10 +13,12 @@
             <thead>
               <tr>
                 <th class="px-4 py-2 border">Nombre</th>
-                <th class="px-4 py-2 border">Monto</th>
+                <th class="px-4 py-2 border">Monto Total</th>
+                <th class="px-4 py-2 border">Ya Pagado</th>
+                <th class="px-4 py-2 border">Saldo Pendiente</th>
                 <th class="px-4 py-2 border">Interés (%)</th>
                 <th class="px-4 py-2 border">Pago mínimo</th>
-                <th class="px-4 py-2 border">Meses estimados</th>
+                <th class="px-4 py-2 border">Meses restantes</th>
                 <th class="px-4 py-2 border">Meses con extra</th>
               </tr>
             </thead>
@@ -24,13 +26,15 @@
               <tr v-for="debt in plan" :key="debt.name">
                 <td class="px-4 py-2 border">{{ debt.name }}</td>
                 <td class="px-4 py-2 border">${{ Number(debt.amount).toFixed(2) }}</td>
+                <td class="px-4 py-2 border">${{ Number(debt.amount_paid || 0).toFixed(2) }}</td>
+                <td class="px-4 py-2 border">${{ Number(debt.amount - (debt.amount_paid || 0)).toFixed(2) }}</td>
                 <td class="px-4 py-2 border">{{ debt.interest_rate }}</td>
                 <td class="px-4 py-2 border">${{ Number(debt.minimum_payment).toFixed(2) }}</td>
                 <td class="px-4 py-2 border">{{ debt.estimated_months === -1 ? 'Nunca' : debt.estimated_months }}</td>
                 <td class="px-4 py-2 border">{{ debt.with_extra_payment === -1 ? 'Nunca' : debt.with_extra_payment }}</td>
               </tr>
               <tr v-if="plan.length === 0">
-                <td colspan="6" class="px-4 py-2 border text-center">No se encontraron deudas.</td>
+                <td colspan="8" class="px-4 py-2 border text-center">No se encontraron deudas.</td>
               </tr>
             </tbody>
           </table>
@@ -112,7 +116,7 @@ function renderChart() {
 onMounted(() => {
   console.log('Component mounted, props:', props);
   console.log('Plan data:', props.plan);
-  
+
   if (props.plan && props.plan.length > 0) {
     renderChart();
   } else {

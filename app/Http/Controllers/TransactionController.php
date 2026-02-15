@@ -126,10 +126,10 @@ class TransactionController extends Controller
     {
         $validatedData = $request->validated();
         $debtPayment = null;
-        
+
         if ($validatedData['debt_id'] && $validatedData['type'] === 'expense') {
             $debt = Debt::find($validatedData['debt_id']);
-            
+
             if (!$debt || $debt->user_id !== $request->user()->id) {
                 return redirect()->back()
                     ->withErrors(['debt_id' => 'Deuda no encontrada o no autorizada.']);
@@ -144,11 +144,11 @@ class TransactionController extends Controller
                     null, // payment method not in form yet
                     $validatedData['note']
                 );
-                
+
                 $transaction = $result['transaction'];
                 $debtPayment = $result['payment'];
                 $actionMessage = 'Transacción y pago de deuda creados exitosamente';
-                
+
             } elseif ($validatedData['is_debt_purchase'] ?? false) {
                 // Purchase with credit card - increases debt balance
                 $transaction = $debt->addPurchase(
@@ -157,9 +157,9 @@ class TransactionController extends Controller
                     $validatedData['category'],
                     $validatedData['note']
                 );
-                
+
                 $actionMessage = 'Transacción creada y deuda aumentada exitosamente';
-                
+
             } else {
                 // Just linked for tracking - no debt balance change
                 $transaction = $request->user()->transactions()->create($validatedData);

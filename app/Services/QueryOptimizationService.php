@@ -24,7 +24,7 @@ class QueryOptimizationService
         try {
             // Get user's display currency - use user parameter directly
             $userCurrency = $user->display_currency ?? config('currencies.default', 'USD');
-            
+
             $summary = DB::table('transactions')
                 ->selectRaw('
                     SUM(CASE WHEN type = "income" THEN amount ELSE 0 END) as total_income,
@@ -77,7 +77,7 @@ class QueryOptimizationService
         try {
             // Get user's display currency - use user parameter directly
             $userCurrency = $user->display_currency ?? config('currencies.default', 'USD');
-            
+
             $results = DB::table('transactions')
                 ->selectRaw('category, SUM(amount) as total_amount, COUNT(*) as transaction_count')
                 ->where('user_id', $user->id)
@@ -142,7 +142,7 @@ class QueryOptimizationService
 
             // Get user's display currency - use user parameter directly
             $userCurrency = $user->display_currency ?? config('currencies.default', 'USD');
-            
+
             return $results->map(function ($budget) use ($userCurrency) {
                 $actualSpent = (float) ($budget->actual_spent ?? 0);
                 $budgetSpent = (float) ($budget->budget_spent ?? 0);
@@ -175,14 +175,7 @@ class QueryOptimizationService
     {
         try {
             $results = DB::table('goals')
-                ->selectRaw('
-                    id,
-                    title,
-                    target_amount,
-                    current_amount,
-                    deadline,
-                    DATEDIFF(deadline, CURDATE()) as days_remaining
-                ')
+                ->select('id', 'title', 'target_amount', 'current_amount', 'deadline')
                 ->where('user_id', $user->id)
                 ->whereRaw('CAST(COALESCE(current_amount, 0) AS DECIMAL(10,2)) < CAST(target_amount AS DECIMAL(10,2))')
                 ->where('deadline', '>', now()->format('Y-m-d'))
@@ -195,7 +188,7 @@ class QueryOptimizationService
 
             // Get user's display currency - use user parameter directly
             $userCurrency = $user->display_currency ?? config('currencies.default', 'USD');
-            
+
             return $results->map(function ($goal) use ($userCurrency) {
                 $targetAmount = (float) ($goal->target_amount ?? 0);
                 $currentAmount = (float) ($goal->current_amount ?? 0);
@@ -204,6 +197,10 @@ class QueryOptimizationService
                 $convertedTarget = CurrencyHelper::convertStoredAmount($targetAmount, $userCurrency);
                 $convertedCurrent = CurrencyHelper::convertStoredAmount($currentAmount, $userCurrency);
 
+                // Calculate days remaining using PHP to match original logic
+                $deadline = Carbon::createFromFormat('Y-m-d', $goal->deadline);
+                $daysRemaining = (int) now()->diffInDays($deadline, false);
+
                 return [
                     'id' => $goal->id,
                     'title' => $goal->title ?? 'Sin título',
@@ -211,7 +208,7 @@ class QueryOptimizationService
                     'current_amount' => $convertedCurrent,
                     'deadline' => $goal->deadline,
                     'progress_percentage' => $convertedTarget > 0 ? ($convertedCurrent / $convertedTarget) * 100 : 0,
-                    'days_remaining' => (int) ($goal->days_remaining ?? 0),
+                    'days_remaining' => $daysRemaining,
                 ];
             })->toArray();
         } catch (\Exception $e) {
@@ -249,7 +246,7 @@ class QueryOptimizationService
 
             // Get user's display currency - use user parameter directly
             $userCurrency = $user->display_currency ?? config('currencies.default', 'USD');
-            
+
             return $results->map(function ($debt) use ($userCurrency) {
                 $originalAmount = (float) ($debt->amount ?? 0);
                 $totalPaid = (float) ($debt->total_paid ?? 0);
@@ -263,6 +260,7 @@ class QueryOptimizationService
                 return [
                     'id' => $debt->id,
                     'name' => $debt->name ?? 'Sin nombre',
+                    'amount' => $convertedBalance,
                     'balance' => $convertedBalance,
                     'remaining_balance' => $convertedRemaining,
                     'minimum_payment' => $convertedMinPayment,
@@ -296,7 +294,7 @@ class QueryOptimizationService
 
             // Get user's display currency - use user parameter directly
             $userCurrency = $user->display_currency ?? config('currencies.default', 'USD');
-            
+
             return $results->map(function ($transaction) use ($userCurrency) {
                 return [
                     'id' => $transaction->id,

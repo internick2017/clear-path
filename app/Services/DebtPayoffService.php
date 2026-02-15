@@ -47,7 +47,8 @@ class DebtPayoffService
             $months = $this->estimateMonths($debt);
             $plan[] = [
                 'name' => $debt->name,
-                'amount' => $debt->amount,
+                'amount' => $debt->total_amount ?? $debt->amount,
+                'amount_paid' => $debt->amount_paid ?? 0,
                 'interest_rate' => $debt->interest_rate,
                 'minimum_payment' => $debt->minimum_payment,
                 'due_date' => $debt->due_date,
@@ -61,47 +62,60 @@ class DebtPayoffService
 
     /**
      * Estimate months to pay off a debt with extra payment.
+     * Since total_amount already includes all interest, we use simple division.
+     * Takes into account amount already paid.
      */
     protected function estimateMonthsWithExtra(Debt $debt, float $monthly_payment): int
     {
-        $balance = $debt->amount;
-        $rate = $debt->interest_rate / 100 / 12;
+        // Use total_amount (which includes all interest) for simple calculation
+        $totalAmount = $debt->total_amount ?? $debt->amount;
+        $amountPaid = $debt->amount_paid ?? 0;
         $payment = $monthly_payment;
-        $months = 0;
-        if ($payment <= $balance * $rate) {
-            return -1;
+
+        // Calculate remaining balance
+        $remainingBalance = $totalAmount - $amountPaid;
+
+        // Simple calculation: remaining balance divided by monthly payment (including extra)
+        if ($payment <= 0) {
+            return -1; // invalid payment
         }
-        while ($balance > 0 && $months < 600) {
-            $interest = $balance * $rate;
-            $balance = $balance + $interest - $payment;
-            $months++;
-            if ($balance < 0) $balance = 0;
+
+        if ($remainingBalance <= 0) {
+            return 0; // already paid off
         }
+
+        $months = ceil($remainingBalance / $payment);
         return $months;
     }
 
     /**
-     * Estimate months to pay off a debt using minimum payment and interest.
+     * Estimate months to pay off a debt using minimum payment.
+     * Since total_amount already includes all interest, we use simple division.
+     * Takes into account amount already paid.
      *
      * @param Debt $debt
      * @return int
      */
     protected function estimateMonths(Debt $debt): int
     {
-        $balance = $debt->amount;
-        $rate = $debt->interest_rate / 100 / 12;
+        // Use total_amount (which includes all interest) for simple calculation
+        $totalAmount = $debt->total_amount ?? $debt->amount;
+        $amountPaid = $debt->amount_paid ?? 0;
         $payment = $debt->minimum_payment;
-        $months = 0;
-        // Simple estimation: stop if payment is not enough to cover interest
-        if ($payment <= $balance * $rate) {
-            return -1; // never paid off
+
+        // Calculate remaining balance
+        $remainingBalance = $totalAmount - $amountPaid;
+
+        // Simple calculation: remaining balance divided by monthly payment
+        if ($payment <= 0) {
+            return -1; // invalid payment
         }
-        while ($balance > 0 && $months < 600) {
-            $interest = $balance * $rate;
-            $balance = $balance + $interest - $payment;
-            $months++;
-            if ($balance < 0) $balance = 0;
+
+        if ($remainingBalance <= 0) {
+            return 0; // already paid off
         }
+
+        $months = ceil($remainingBalance / $payment);
         return $months;
     }
 }
