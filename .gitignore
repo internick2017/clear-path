@@ -35,8 +35,6 @@ Homestead.yaml
 /public/js/*.js.map
 /public/css/*.css.map
 /public/assets/
-composer.lock
-package-lock.json
 coverage/
 .phpunit.cache
 *.bak
