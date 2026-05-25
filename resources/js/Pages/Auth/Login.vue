@@ -26,6 +26,12 @@ const submit = () => {
         onFinish: () => form.reset('password'),
     });
 };
+
+const fillDemo = () => {
+    form.email = 'test@example.com';
+    form.password = 'password';
+    submit();
+};
 </script>
 
 <template>
@@ -166,6 +172,15 @@ const submit = () => {
                     </div>
 
                     <button
+                        type="button"
+                        @click="fillDemo"
+                        class="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        :disabled="form.processing"
+                    >
+                        ⚡ Probar Demo — Entrar sin registrarse
+                    </button>
+
+                    <button
                         type="submit"
                         class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         :disabled="form.processing"
@@ -182,19 +197,10 @@ const submit = () => {
                 </form>
 
                 <!-- Demo Account Info -->
-                <div class="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div class="flex items-start">
-                        <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-blue-800">Cuenta de Prueba</p>
-                            <p class="text-sm text-blue-700 mt-1">
-                                Email: <span class="font-mono">test@example.com</span><br>
-                                Contraseña: <span class="font-mono">password</span>
-                            </p>
-                        </div>
-                    </div>
+                <div class="mt-6 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
+                    <p class="text-xs text-emerald-700">
+                        Demo: <span class="font-mono font-semibold">test@example.com</span> / <span class="font-mono font-semibold">password</span>
+                    </p>
                 </div>
 
                 <!-- Back to Home -->
