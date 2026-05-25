@@ -33,11 +33,6 @@ RUN composer dump-autoload --optimize
 # Build frontend assets
 RUN npm run build
 
-# Laravel caches
-RUN php artisan config:cache \
-    && php artisan route:cache \
-    && php artisan view:cache
-
 RUN chmod +x scripts/start.sh
 
 EXPOSE 8000
