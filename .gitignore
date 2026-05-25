@@ -50,3 +50,7 @@ coverage/
 
 # Development tracking file
 development-progress.md
+
+# Claude local settings
+.claude/settings.local.json
+.claude/settings.json
